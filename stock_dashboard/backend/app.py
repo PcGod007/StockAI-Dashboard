@@ -3,10 +3,8 @@ from flask_cors import CORS
 import pandas as pd
 import numpy as np
 from tensorflow.keras.models import load_model
-from tensorflow.keras.models import model_from_json
 import zipfile
 import json
-import tempfile
 import yfinance as yf
 from datetime import datetime, timedelta
 from sklearn.preprocessing import MinMaxScaler
@@ -16,7 +14,7 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), 'Latest_stock_price_model.keras')
+MODEL_PATH = os.path.join(os.path.dirname(__file__), 'saved_model')
 NEWS_API_KEY = os.environ.get('NEWS_API_KEY', 'db66d6f0a9eb427aa1e69437b75f6f34')
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -44,48 +42,16 @@ def fetch_stock_data(ticker, start, end):
     return data
 
 def get_model():
-    """Lazy-load the Keras model with robust fallback.
-
-    First attempt : keras.models.load_model(MODEL_PATH)
-    Fallback        : unzip .keras archive, rebuild from config + load weights
-    The function caches the model and records how it was loaded in
-    ``get_model.loaded_with`` (`'load_model'` or `'manual'`).
+    """Lazy-load the Keras model from legacy HDF5 (stock_model.h5).
+    Legacy .h5 is universally compatible with TF 2.x on all platforms.
     """
     if getattr(get_model, 'model', None) is not None:
         return get_model.model
-    # first try the convenient Keras loader
-    try:
-        m = load_model(MODEL_PATH, compile=False)
-        get_model.model = m
-        get_model.loaded_with = 'load_model'
-        return m
-    except Exception as e:
-        app.logger.warning('load_model failed, will attempt manual rebuild: %s', e)
-    # manual fallback: rebuild from config + h5 weights
-    try:
-        with zipfile.ZipFile(MODEL_PATH, 'r') as z:
-            if 'config.json' not in z.namelist():
-                raise RuntimeError('config.json not found inside .keras archive')
-            cfg = z.read('config.json').decode('utf-8')
-            weights_name = next((n for n in z.namelist() if n.endswith('.h5')), None)
-            if not weights_name:
-                raise RuntimeError('no .h5 weights file found inside .keras archive')
-            m = model_from_json(cfg)
-            tf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.h5')
-            try:
-                tf_temp.write(z.read(weights_name))
-                tf_temp.flush(); tf_temp.close()
-                # load weights by order (no by_name) so biases are not skipped
-                m.load_weights(tf_temp.name)
-            finally:
-                try: os.unlink(tf_temp.name)
-                except Exception: pass
-        get_model.model = m
-        get_model.loaded_with = 'manual'
-        return m
-    except Exception as e2:
-        app.logger.error('manual model load failed: %s', e2)
-        raise
+    m = load_model(MODEL_PATH, compile=False)
+    get_model.model = m
+    app.logger.info('Model loaded from %s', MODEL_PATH)
+    return m
+
 
 def compute_rsi(series, period=14):
     delta  = series.diff()
@@ -348,24 +314,36 @@ def get_prediction():
             return jsonify({'error': 'No data found.'}), 404
 
         splitting_len = int(len(data) * 0.7)
-        x_test_df    = data['Close'].iloc[splitting_len:]
-        scaler       = MinMaxScaler(feature_range=(0, 1))
-        scaled_data  = scaler.fit_transform(x_test_df.values.reshape(-1, 1))
 
-        # Defensive check: ensure we have enough points to build 100-length
-        # sliding windows. If scaled_data has <=100 entries, the loop below
-        # will produce an empty dataset and Keras will raise "input data
-        # must be non-empty" errors. Return a clear 400 response instead.
-        if len(scaled_data) <= 100:
-            return jsonify({'error': 'Not enough historical data to run prediction. Please request a larger date range or a ticker with more history (need at least 101 closing prices).'}), 400
+        # ── Fit scaler on the FULL dataset (matches training normalization) ──
+        # The LSTM model was trained with a scaler derived from all Close
+        # prices. Using only the test-split values produces a different
+        # min/max, making inverse-transformed predictions land in the wrong
+        # price range entirely.
+        scaler      = MinMaxScaler(feature_range=(0, 1))
+        scaled_full = scaler.fit_transform(data['Close'].values.reshape(-1, 1))
+
+        # Defensive check: ensure there are enough test-set points for at
+        # least one 100-step sliding window.
+        test_len = len(data) - splitting_len
+        if test_len <= 100:
+            return jsonify({'error': 'Not enough historical data to run prediction. Please request a larger date range or a ticker with more history (need at least 101 test-set closing prices).'}), 400
 
         # ── Historical test-set predictions ──────────────────────────────────
+        # Windows span the train→test boundary: window i starts at
+        # (splitting_len + i - 100) so the first window uses 100 training
+        # points, and subsequent ones progressively include more test data.
         x_data, y_data = [], []
-        for i in range(100, len(scaled_data)):
-            x_data.append(scaled_data[i - 100:i])
-            y_data.append(scaled_data[i])
+        for i in range(splitting_len, len(scaled_full)):
+            if i < 100:
+                continue  # not enough look-back (shouldn't happen for typical date ranges)
+            x_data.append(scaled_full[i - 100:i])
+            y_data.append(scaled_full[i])
         x_data = np.array(x_data)
         y_data = np.array(y_data)
+
+        if len(x_data) == 0:
+            return jsonify({'error': 'Unable to construct sliding windows — try a wider date range.'}), 400
 
         # Use the shared loader to obtain the Keras model.
         model = get_model()
@@ -374,9 +352,10 @@ def get_prediction():
         inv_y_test  = scaler.inverse_transform(y_data)
 
         # ── Future 30-day sliding-window forecast ─────────────────────────────
-        # Note: used for chart visualization; compound error grows after ~7 days
+        # Seed with the last 100 points of the full scaled series so the
+        # model sees the most recent price context (not just the test subset).
         future_preds_scaled = []
-        current_batch = scaled_data[-100:].reshape(1, 100, 1)
+        current_batch = scaled_full[-100:].reshape(1, 100, 1)
         for _ in range(30):
             nxt = model.predict(current_batch, verbose=0)
             future_preds_scaled.append(nxt[0])
@@ -387,7 +366,7 @@ def get_prediction():
         # ── Define key values before momentum/blend calculations ────────────
         last_close   = float(data['Close'].iloc[-1])
         last_date    = data.index[-1]
-        pred_index   = data.index[splitting_len + 100:]
+        pred_index   = data.index[splitting_len:]
 
         # ── Build a momentum-based projection as the realistic future baseline ──
         # Use 30-day momentum from historical data, adjusted by RSI congestion.
@@ -432,7 +411,7 @@ def get_prediction():
             'news_articles':    news_articles,
             'close_full': {
                 'dates':  [d.strftime('%Y-%m-%d') for d in pred_index],
-                'values': [round(float(v), 4) for v in data['Close'].iloc[splitting_len + 100:]]
+                'values': [round(float(v), 4) for v in data['Close'].iloc[splitting_len:]]
             }
         })
     except Exception as e:
