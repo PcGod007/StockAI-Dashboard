@@ -73,7 +73,7 @@ This project is configured for seamless Netlify deployment.
 - **Deep Learning Predictions**: Visualizes Original vs. Predicted prices using LSTM.
 - **Performance Metrics**: Calculates MAE, RMSE, and MAPE errors for model accuracy.
 - **Modern UI**: Dark-themed glassmorphism design with responsive support.
-- **Data Export**: Paginated and searchable stock data tables.
+- **Data Export**: Paginated and searchable stock data tables. 
 
 ---
 
