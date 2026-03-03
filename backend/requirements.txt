@@ -2,7 +2,7 @@ flask
 flask-cors
 yfinance
 keras
-tensorflow
+tensorflow-cpu
 scikit-learn
 numpy
 pandas
