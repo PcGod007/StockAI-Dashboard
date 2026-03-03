@@ -43,6 +43,49 @@ def fetch_stock_data(ticker, start, end):
         pass
     return data
 
+def get_model():
+    """Lazy-load the Keras model with robust fallback.
+
+    First attempt : keras.models.load_model(MODEL_PATH)
+    Fallback        : unzip .keras archive, rebuild from config + load weights
+    The function caches the model and records how it was loaded in
+    ``get_model.loaded_with`` (`'load_model'` or `'manual'`).
+    """
+    if getattr(get_model, 'model', None) is not None:
+        return get_model.model
+    # first try the convenient Keras loader
+    try:
+        m = load_model(MODEL_PATH, compile=False)
+        get_model.model = m
+        get_model.loaded_with = 'load_model'
+        return m
+    except Exception as e:
+        app.logger.warning('load_model failed, will attempt manual rebuild: %s', e)
+    # manual fallback: rebuild from config + h5 weights
+    try:
+        with zipfile.ZipFile(MODEL_PATH, 'r') as z:
+            if 'config.json' not in z.namelist():
+                raise RuntimeError('config.json not found inside .keras archive')
+            cfg = z.read('config.json').decode('utf-8')
+            weights_name = next((n for n in z.namelist() if n.endswith('.h5')), None)
+            if not weights_name:
+                raise RuntimeError('no .h5 weights file found inside .keras archive')
+            m = model_from_json(cfg)
+            tf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.h5')
+            try:
+                tf_temp.write(z.read(weights_name))
+                tf_temp.flush(); tf_temp.close()
+                # load weights by order (no by_name) so biases are not skipped
+                m.load_weights(tf_temp.name)
+            finally:
+                try: os.unlink(tf_temp.name)
+                except Exception: pass
+        get_model.model = m
+        get_model.loaded_with = 'manual'
+        return m
+    except Exception as e2:
+        app.logger.error('manual model load failed: %s', e2)
+        raise
 
 def compute_rsi(series, period=14):
     delta  = series.diff()
@@ -324,48 +367,7 @@ def get_prediction():
         x_data = np.array(x_data)
         y_data = np.array(y_data)
 
-        # Lazy-load the Keras model with a robust fallback.
-        # Some .keras archives store config.json + HDF5 weights; if
-        # `load_model` fails to load weights (LSTM variable errors),
-        # attempt to reconstruct from `config.json` and load the
-        # HDF5 weights manually.
-        def get_model():
-            if getattr(get_model, 'model', None) is not None:
-                return get_model.model
-            # first try the convenient Keras loader
-            try:
-                m = load_model(MODEL_PATH, compile=False)
-                get_model.model = m
-                get_model.loaded_with = 'load_model'
-                return m
-            except Exception as e:
-                app.logger.warning('load_model failed, will attempt manual rebuild: %s', e)
-            # manual fallback: rebuild from config + h5 weights
-            try:
-                with zipfile.ZipFile(MODEL_PATH, 'r') as z:
-                    if 'config.json' not in z.namelist():
-                        raise RuntimeError('config.json not found inside .keras archive')
-                    cfg = z.read('config.json').decode('utf-8')
-                    weights_name = next((n for n in z.namelist() if n.endswith('.h5')), None)
-                    if not weights_name:
-                        raise RuntimeError('no .h5 weights file found inside .keras archive')
-                    m = model_from_json(cfg)
-                    tf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.h5')
-                    try:
-                        tf_temp.write(z.read(weights_name))
-                        tf_temp.flush(); tf_temp.close()
-                        # load weights by order (no by_name) so biases are not skipped
-                        m.load_weights(tf_temp.name)
-                    finally:
-                        try: os.unlink(tf_temp.name)
-                        except Exception: pass
-                get_model.model = m
-                get_model.loaded_with = 'manual'
-                return m
-            except Exception as e2:
-                app.logger.error('manual model load failed: %s', e2)
-                raise
-
+        # Use the shared loader to obtain the Keras model.
         model = get_model()
         predictions = model.predict(x_data)
         inv_pre     = scaler.inverse_transform(predictions)
