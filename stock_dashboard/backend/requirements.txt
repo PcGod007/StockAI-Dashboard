@@ -1,0 +1,10 @@
+flask
+flask-cors
+yfinance>=0.2.40
+pandas>=2.0.0
+numpy<2.0.0
+tensorflow-cpu==2.15.0
+requests
+scikit-learn
+gunicorn
+h5py
