@@ -24,6 +24,9 @@ NEWS_API_KEY = os.environ.get('NEWS_API_KEY', 'db66d6f0a9eb427aa1e69437b75f6f34'
 # ─────────────────────────────────────────────────────────────────────────────
 
 def fetch_stock_data(ticker, start, end):
+    # NOTE: This comment is here to trigger a new Git commit/redeploy on Railway.
+    #       (Railway sometimes lags detecting changes; pushing anything forces
+    #       a rebuild so the latest code is running.)
     # yfinance sometimes ignores the requested start/end range, returning the
     # full history.  To ensure consistency between local and deployed runs we
     # explicitly trim the DataFrame by the provided dates.
