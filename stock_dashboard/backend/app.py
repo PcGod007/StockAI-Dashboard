@@ -295,6 +295,13 @@ def get_prediction():
         scaler       = MinMaxScaler(feature_range=(0, 1))
         scaled_data  = scaler.fit_transform(x_test_df.values.reshape(-1, 1))
 
+        # Defensive check: ensure we have enough points to build 100-length
+        # sliding windows. If scaled_data has <=100 entries, the loop below
+        # will produce an empty dataset and Keras will raise "input data
+        # must be non-empty" errors. Return a clear 400 response instead.
+        if len(scaled_data) <= 100:
+            return jsonify({'error': 'Not enough historical data to run prediction. Please request a larger date range or a ticker with more history (need at least 101 closing prices).'}), 400
+
         # ── Historical test-set predictions ──────────────────────────────────
         x_data, y_data = [], []
         for i in range(100, len(scaled_data)):
