@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model, model_from_json
 import zipfile
 import json
 import yfinance as yf
@@ -41,57 +41,123 @@ def fetch_stock_data(ticker, start, end):
         pass
     return data
 
-def get_model():
-    """Lazy-load the Keras model with robust fallback.
+def _load_weights_from_keras214_h5(model, h5_path):
+    """Load weights from a Keras 2.14-format model.weights.h5 file.
 
-    Strategy
-    --------
-    1. Direct load  : keras.models.load_model(MODEL_PATH)          [fastest]
-    2. Extract+load : copy the .keras archive to a system temp dir,
-                      then call load_model on *that* path.  Helps when
-                      Railway/Docker mounts the work-dir read-only or when
-                      TF cannot open a zip from certain filesystem paths.
-    The model is cached on the function object after the first successful load.
+    The file uses tf.train.Checkpoint-style flat keys with backslashes, e.g.:
+      '_layer_checkpoint_dependencies\\\\dense'       -> vars group
+      '_layer_checkpoint_dependencies\\\\lstm\\\\cell' -> vars group (recurrent)
+
+    We key into the h5 file by these flat string names, then sort the 'vars'
+    sub-group numerically and call layer.set_weights() — exactly matching
+    what Keras expects in layer order.
+    """
+    import h5py
+
+    PREFIX = '_layer_checkpoint_dependencies\\'
+
+    def _layer_weights_from_file(f, layer_name):
+        # Dense / simple layers: PREFIX + layer_name
+        direct_key = PREFIX + layer_name
+        # Recurrent layers (LSTM, GRU): PREFIX + layer_name + '\\cell'
+        cell_key = PREFIX + layer_name + '\\cell'
+        for key in [cell_key, direct_key]:   # try cell first; parent may have empty vars
+            if key not in f:
+                continue
+            vars_group = f[key]['vars']
+            if len(vars_group) == 0:         # skip empty groups (LSTM parent has one)
+                continue
+            idx_keys = sorted(vars_group.keys(), key=lambda k: int(k))
+            return [np.array(vars_group[k]) for k in idx_keys]
+        raise KeyError(
+            f'No non-empty h5 vars group for layer "{layer_name}". '
+            f'Available root keys: {[k for k in f.keys() if "_layer_checkpoint" in k]}'
+        )
+
+    with h5py.File(h5_path, 'r') as f:
+        for layer in model.layers:
+            if not layer.weights:
+                continue
+            w_arrays = _layer_weights_from_file(f, layer.name)
+            layer.set_weights(w_arrays)
+
+    return model
+
+
+def get_model():
+    """Lazy-load the Keras model: three strategies, most reliable last.
+
+    S1 - Direct load_model()         : fastest; works in most environments.
+    S2 - Temp-copy + load_model()    : bypasses read-only mount issues.
+    S3 - h5py manual weight loader   : bypasses ALL Keras weight-format issues.
+         Reads the checkpoint-style model.weights.h5 directly without going
+         through Keras's legacy h5 reader (which needs 'layer_names' attr).
     """
     if getattr(get_model, 'model', None) is not None:
         return get_model.model
+
+    e1 = e2 = None
 
     # ── Strategy 1: direct load ──────────────────────────────────────────────
     try:
         m = load_model(MODEL_PATH, compile=False)
         get_model.model = m
-        get_model.loaded_with = 'load_model_direct'
-        app.logger.info('Model loaded via direct load_model()')
+        app.logger.info('Model loaded via Strategy 1 (direct load_model)')
         return m
-    except Exception as e:
-        app.logger.warning('Direct load_model failed: %s', e)
+    except Exception as exc:
+        e1 = exc
+        app.logger.warning('Strategy 1 failed: %s', exc)
 
-    # ── Strategy 2: extract archive to temp dir, reload ──────────────────────
-    # The .keras file is a ZIP archive.  Some environments (Railway, Docker)
-    # have trouble letting TF read ZIPs from the mounted working directory.
-    # Extracting first avoids this class of error entirely.
+    # ── Strategy 2: temp-copy + load_model ───────────────────────────────────
     try:
-        import shutil, tempfile as _tmpmod
-        tmp_dir = _tmpmod.mkdtemp(prefix='keras_model_')
+        import shutil, tempfile as _tmp
+        tmp_dir = _tmp.mkdtemp(prefix='keras_model_')
         try:
-            # Reconstruct a proper .keras file in the temp dir
             tmp_keras = os.path.join(tmp_dir, 'model.keras')
             shutil.copy2(MODEL_PATH, tmp_keras)
             m = load_model(tmp_keras, compile=False)
             get_model.model = m
-            get_model.loaded_with = 'load_model_temp_copy'
-            app.logger.info('Model loaded via temp-copy strategy')
+            app.logger.info('Model loaded via Strategy 2 (temp-copy load_model)')
             return m
         finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+    except Exception as exc:
+        e2 = exc
+        app.logger.warning('Strategy 2 failed: %s', exc)
+
+    # ── Strategy 3: h5py manual weight loading ───────────────────────────────
+    # Used when TF 2.15 on Railway falls back to the legacy h5 weight reader
+    # and finds 0 layers because there's no 'layer_names' attr in this format.
+    try:
+        import tempfile as _tmp
+
+        with zipfile.ZipFile(MODEL_PATH, 'r') as z:
+            config_json = z.read('config.json').decode('utf-8')
+            h5_bytes    = z.read('model.weights.h5')
+
+        h5_tmp = _tmp.NamedTemporaryFile(delete=False, suffix='.weights.h5')
+        try:
+            h5_tmp.write(h5_bytes)
+            h5_tmp.flush(); h5_tmp.close()
+
+            m = model_from_json(config_json)
+            # Forward pass to create all weight variables before we assign
+            m(np.zeros((1, 100, 1), dtype=np.float32))
+            _load_weights_from_keras214_h5(m, h5_tmp.name)
+        finally:
             try:
-                shutil.rmtree(tmp_dir, ignore_errors=True)
+                os.unlink(h5_tmp.name)
             except Exception:
                 pass
-    except Exception as e2:
-        app.logger.error('Temp-copy load_model also failed: %s', e2)
+
+        get_model.model = m
+        app.logger.info('Model loaded via Strategy 3 (h5py manual weight loader)')
+        return m
+    except Exception as e3:
+        app.logger.error('Strategy 3 failed: %s', e3)
         raise RuntimeError(
-            f'Could not load model from {MODEL_PATH}. '
-            f'Direct error: see logs. Temp-copy error: {e2}'
+            f'All model-loading strategies failed.\n'
+            f'  S1: {e1}\n  S2: {e2}\n  S3: {e3}'
         )
 
 
