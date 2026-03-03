@@ -340,7 +340,14 @@ def get_prediction():
                             tf_temp.write(z.read(weights_name))
                             tf_temp.flush()
                             tf_temp.close()
-                            m.load_weights(tf_temp.name)
+                            # Try loading weights by layer name and skip mismatches.
+                            # This helps when layer ordering or naming differs slightly
+                            # between the saved weights and the reconstructed model.
+                            try:
+                                m.load_weights(tf_temp.name, by_name=True, skip_mismatch=True)
+                            except TypeError:
+                                # Older TF versions may not support skip_mismatch; fall back
+                                m.load_weights(tf_temp.name, by_name=True)
                         finally:
                             try:
                                 os.unlink(tf_temp.name)
