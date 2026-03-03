@@ -3,6 +3,10 @@ from flask_cors import CORS
 import pandas as pd
 import numpy as np
 from tensorflow.keras.models import load_model
+from tensorflow.keras.models import model_from_json
+import zipfile
+import json
+import tempfile
 import yfinance as yf
 from datetime import datetime, timedelta
 from sklearn.preprocessing import MinMaxScaler
@@ -293,7 +297,56 @@ def get_prediction():
         x_data = np.array(x_data)
         y_data = np.array(y_data)
 
-        model       = load_model(MODEL_PATH)
+        # Lazy-load the Keras model with a robust fallback.
+        # Some .keras archives store config.json + HDF5 weights; if
+        # `load_model` fails to load weights (LSTM variable errors),
+        # attempt to reconstruct from `config.json` and load the
+        # HDF5 weights manually.
+        def get_model():
+            if getattr(get_model, 'model', None) is not None:
+                return get_model.model
+            try:
+                m = load_model(MODEL_PATH, compile=False)
+                get_model.model = m
+                return m
+            except Exception as e:
+                app.logger.warning('load_model failed, attempting manual load: %s', e)
+                try:
+                    with zipfile.ZipFile(MODEL_PATH, 'r') as z:
+                        # read config
+                        if 'config.json' in z.namelist():
+                            cfg = z.read('config.json').decode('utf-8')
+                        else:
+                            raise RuntimeError('config.json not found inside .keras archive')
+                        # find HDF5 weights file
+                        weights_name = None
+                        for n in z.namelist():
+                            if n.endswith('.h5'):
+                                weights_name = n
+                                break
+                        if not weights_name:
+                            raise RuntimeError('no .h5 weights file found inside .keras archive')
+                        # rebuild model from json
+                        m = model_from_json(cfg)
+                        # extract weights to temp file and load
+                        tf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.h5')
+                        try:
+                            tf_temp.write(z.read(weights_name))
+                            tf_temp.flush()
+                            tf_temp.close()
+                            m.load_weights(tf_temp.name)
+                        finally:
+                            try:
+                                os.unlink(tf_temp.name)
+                            except Exception:
+                                pass
+                        get_model.model = m
+                        return m
+                except Exception as e2:
+                    app.logger.error('manual model load failed: %s', e2)
+                    raise
+
+        model = get_model()
         predictions = model.predict(x_data)
         inv_pre     = scaler.inverse_transform(predictions)
         inv_y_test  = scaler.inverse_transform(y_data)
