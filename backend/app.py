@@ -3,10 +3,8 @@ from flask_cors import CORS
 import pandas as pd
 import numpy as np
 from tensorflow.keras.models import load_model
-from tensorflow.keras.models import model_from_json
 import zipfile
 import json
-import tempfile
 import yfinance as yf
 from datetime import datetime, timedelta
 from sklearn.preprocessing import MinMaxScaler
@@ -46,46 +44,56 @@ def fetch_stock_data(ticker, start, end):
 def get_model():
     """Lazy-load the Keras model with robust fallback.
 
-    First attempt : keras.models.load_model(MODEL_PATH)
-    Fallback        : unzip .keras archive, rebuild from config + load weights
-    The function caches the model and records how it was loaded in
-    ``get_model.loaded_with`` (`'load_model'` or `'manual'`).
+    Strategy
+    --------
+    1. Direct load  : keras.models.load_model(MODEL_PATH)          [fastest]
+    2. Extract+load : copy the .keras archive to a system temp dir,
+                      then call load_model on *that* path.  Helps when
+                      Railway/Docker mounts the work-dir read-only or when
+                      TF cannot open a zip from certain filesystem paths.
+    The model is cached on the function object after the first successful load.
     """
     if getattr(get_model, 'model', None) is not None:
         return get_model.model
-    # first try the convenient Keras loader
+
+    # ── Strategy 1: direct load ──────────────────────────────────────────────
     try:
         m = load_model(MODEL_PATH, compile=False)
         get_model.model = m
-        get_model.loaded_with = 'load_model'
+        get_model.loaded_with = 'load_model_direct'
+        app.logger.info('Model loaded via direct load_model()')
         return m
     except Exception as e:
-        app.logger.warning('load_model failed, will attempt manual rebuild: %s', e)
-    # manual fallback: rebuild from config + h5 weights
+        app.logger.warning('Direct load_model failed: %s', e)
+
+    # ── Strategy 2: extract archive to temp dir, reload ──────────────────────
+    # The .keras file is a ZIP archive.  Some environments (Railway, Docker)
+    # have trouble letting TF read ZIPs from the mounted working directory.
+    # Extracting first avoids this class of error entirely.
     try:
-        with zipfile.ZipFile(MODEL_PATH, 'r') as z:
-            if 'config.json' not in z.namelist():
-                raise RuntimeError('config.json not found inside .keras archive')
-            cfg = z.read('config.json').decode('utf-8')
-            weights_name = next((n for n in z.namelist() if n.endswith('.h5')), None)
-            if not weights_name:
-                raise RuntimeError('no .h5 weights file found inside .keras archive')
-            m = model_from_json(cfg)
-            tf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.h5')
+        import shutil, tempfile as _tmpmod
+        tmp_dir = _tmpmod.mkdtemp(prefix='keras_model_')
+        try:
+            # Reconstruct a proper .keras file in the temp dir
+            tmp_keras = os.path.join(tmp_dir, 'model.keras')
+            shutil.copy2(MODEL_PATH, tmp_keras)
+            m = load_model(tmp_keras, compile=False)
+            get_model.model = m
+            get_model.loaded_with = 'load_model_temp_copy'
+            app.logger.info('Model loaded via temp-copy strategy')
+            return m
+        finally:
             try:
-                tf_temp.write(z.read(weights_name))
-                tf_temp.flush(); tf_temp.close()
-                # load weights by order (no by_name) so biases are not skipped
-                m.load_weights(tf_temp.name)
-            finally:
-                try: os.unlink(tf_temp.name)
-                except Exception: pass
-        get_model.model = m
-        get_model.loaded_with = 'manual'
-        return m
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+            except Exception:
+                pass
     except Exception as e2:
-        app.logger.error('manual model load failed: %s', e2)
-        raise
+        app.logger.error('Temp-copy load_model also failed: %s', e2)
+        raise RuntimeError(
+            f'Could not load model from {MODEL_PATH}. '
+            f'Direct error: see logs. Temp-copy error: {e2}'
+        )
+
 
 def compute_rsi(series, period=14):
     delta  = series.diff()
