@@ -5,9 +5,9 @@ import axios from 'axios';
 // Compute base URL using environment variable; the variable must be set to the
 // Railway domain (without a trailing `/api`).
 // If it isn't set, the code will fall back to `/api`, which only works in
-development when the Vite proxy is active.
+// development when the Vite proxy is active.
 const BASE = import.meta.env.VITE_API_URL
-  ? `${import.meta.env.VITE_API_URL.replace(/\/+$/,'')}/api` // strip any trailing slashes
+  ? `${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api` // strip any trailing slashes
   : '/api';
 
 // helpful debug output in the browser console so you can verify which URL is

@@ -113,6 +113,7 @@ export function PredictionChart({ data }) {
                 type: 'scatter',
                 mode: 'lines',
                 line: { color: '#388bfd', width: 2 },
+                connectgaps: false,
             },
             {
                 x: data.dates,
@@ -123,6 +124,7 @@ export function PredictionChart({ data }) {
                 line: { color: '#3fb950', width: 2, dash: 'dot' },
                 fill: 'tonexty',
                 fillcolor: 'rgba(63,185,80,.06)',
+                connectgaps: false,
             },
             {
                 x: data.future_dates,
@@ -136,11 +138,31 @@ export function PredictionChart({ data }) {
             },
         ];
 
+        // Compute x-axis range to span ALL traces (historical + future)
+        const allDates = [
+            ...(data.close_full?.dates || []),
+            ...(data.dates || []),
+            ...(data.future_dates || []),
+        ];
+        const xRange = allDates.length > 0
+            ? [allDates[0], allDates[allDates.length - 1]]
+            : undefined;
+
         Plotly.react(ref.current, traces, {
             ...LAYOUT_BASE,
             title: {
                 text: 'Original vs Predicted Close Price (LSTM)',
                 font: { family: 'Space Grotesk, sans-serif', size: 15, color: '#e6edf3' },
+            },
+            xaxis: {
+                ...LAYOUT_BASE.xaxis,
+                ...(xRange ? { range: xRange } : {}),
+                type: 'date',
+            },
+            yaxis: {
+                ...LAYOUT_BASE.yaxis,
+                autorange: true,
+                rangemode: 'normal',
             },
         }, CONFIG);
     }, [data]);
