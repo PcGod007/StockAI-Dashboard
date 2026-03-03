@@ -428,6 +428,29 @@ def get_news():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/model-info', methods=['GET'])
+def model_info():
+    """Debug endpoint: returns file size and archive members for the .keras model file."""
+    try:
+        if not os.path.exists(MODEL_PATH):
+            return jsonify({'error': 'model file not found', 'path': MODEL_PATH}), 404
+        size = os.path.getsize(MODEL_PATH)
+        members = []
+        try:
+            with zipfile.ZipFile(MODEL_PATH, 'r') as z:
+                for n in z.namelist():
+                    try:
+                        info = z.getinfo(n)
+                        members.append({'name': n, 'size': info.file_size})
+                    except Exception:
+                        members.append({'name': n})
+        except Exception as e:
+            members = [{'error': 'not a zip archive or cannot read members', 'detail': str(e)}]
+        return jsonify({'path': MODEL_PATH, 'size_bytes': size, 'members': members})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("🚀 Stock Predictor API running at http://127.0.0.1:5000")
     app.run(debug=True, port=5000)
