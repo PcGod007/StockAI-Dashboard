@@ -332,53 +332,39 @@ def get_prediction():
         def get_model():
             if getattr(get_model, 'model', None) is not None:
                 return get_model.model
+            # first try the convenient Keras loader
             try:
                 m = load_model(MODEL_PATH, compile=False)
                 get_model.model = m
+                get_model.loaded_with = 'load_model'
                 return m
             except Exception as e:
-                app.logger.warning('load_model failed, attempting manual load: %s', e)
-                try:
-                    with zipfile.ZipFile(MODEL_PATH, 'r') as z:
-                        # read config
-                        if 'config.json' in z.namelist():
-                            cfg = z.read('config.json').decode('utf-8')
-                        else:
-                            raise RuntimeError('config.json not found inside .keras archive')
-                        # find HDF5 weights file
-                        weights_name = None
-                        for n in z.namelist():
-                            if n.endswith('.h5'):
-                                weights_name = n
-                                break
-                        if not weights_name:
-                            raise RuntimeError('no .h5 weights file found inside .keras archive')
-                        # rebuild model from json
-                        m = model_from_json(cfg)
-                        # extract weights to temp file and load
-                        tf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.h5')
-                        try:
-                            tf_temp.write(z.read(weights_name))
-                            tf_temp.flush()
-                            tf_temp.close()
-                            # Try loading weights by layer name and skip mismatches.
-                            # This helps when layer ordering or naming differs slightly
-                            # between the saved weights and the reconstructed model.
-                            try:
-                                m.load_weights(tf_temp.name, by_name=True, skip_mismatch=True)
-                            except TypeError:
-                                # Older TF versions may not support skip_mismatch; fall back
-                                m.load_weights(tf_temp.name, by_name=True)
-                        finally:
-                            try:
-                                os.unlink(tf_temp.name)
-                            except Exception:
-                                pass
-                        get_model.model = m
-                        return m
-                except Exception as e2:
-                    app.logger.error('manual model load failed: %s', e2)
-                    raise
+                app.logger.warning('load_model failed, will attempt manual rebuild: %s', e)
+            # manual fallback: rebuild from config + h5 weights
+            try:
+                with zipfile.ZipFile(MODEL_PATH, 'r') as z:
+                    if 'config.json' not in z.namelist():
+                        raise RuntimeError('config.json not found inside .keras archive')
+                    cfg = z.read('config.json').decode('utf-8')
+                    weights_name = next((n for n in z.namelist() if n.endswith('.h5')), None)
+                    if not weights_name:
+                        raise RuntimeError('no .h5 weights file found inside .keras archive')
+                    m = model_from_json(cfg)
+                    tf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.h5')
+                    try:
+                        tf_temp.write(z.read(weights_name))
+                        tf_temp.flush(); tf_temp.close()
+                        # load weights by order (no by_name) so biases are not skipped
+                        m.load_weights(tf_temp.name)
+                    finally:
+                        try: os.unlink(tf_temp.name)
+                        except Exception: pass
+                get_model.model = m
+                get_model.loaded_with = 'manual'
+                return m
+            except Exception as e2:
+                app.logger.error('manual model load failed: %s', e2)
+                raise
 
         model = get_model()
         predictions = model.predict(x_data)
@@ -495,33 +481,11 @@ def model_debug():
     start = request.args.get('start', '2015-01-01')
     end = request.args.get('end', datetime.now().strftime('%Y-%m-%d'))
     try:
-        # load model (reuse same robust logic as /api/predict)
-        try:
-            model = load_model(MODEL_PATH, compile=False)
-        except Exception:
-            # manual fallback
-            with zipfile.ZipFile(MODEL_PATH, 'r') as z:
-                if 'config.json' not in z.namelist():
-                    return jsonify({'error': 'config.json missing in .keras archive'}), 500
-                cfg = z.read('config.json').decode('utf-8')
-                weights_name = None
-                for n in z.namelist():
-                    if n.endswith('.h5'):
-                        weights_name = n
-                        break
-                if not weights_name:
-                    return jsonify({'error': 'no .h5 weights found in archive'}), 500
-                model = model_from_json(cfg)
-                tf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.h5')
-                try:
-                    tf_temp.write(z.read(weights_name)); tf_temp.flush(); tf_temp.close()
-                    try:
-                        model.load_weights(tf_temp.name, by_name=True, skip_mismatch=True)
-                    except TypeError:
-                        model.load_weights(tf_temp.name, by_name=True)
-                finally:
-                    try: os.unlink(tf_temp.name)
-                    except Exception: pass
+        # load model using the shared get_model helper so we exercise the same
+        # code path as /api/predict.  After loading we can check how it was
+        # instantiated (via load_model() or manual rebuild).
+        model = get_model()
+        load_mode = getattr(get_model, 'loaded_with', 'unknown')
 
         # gather layer info
         layers = []
@@ -541,7 +505,9 @@ def model_debug():
         if data.empty:
             return jsonify({'error': 'no data for provided ticker/range'}), 404
         original_len = len(data)
-        # note: after slicing we may have trimmed data; report length for debug
+        # note: after slicing we may have trimmed data; report length and sample dates
+        first_dates = data.index[:5].astype(str).tolist()
+        last_dates  = data.index[-5:].astype(str).tolist()
         data = data.reset_index()
         x_test_df = data['Close']
         scaler = MinMaxScaler(feature_range=(0,1))
@@ -572,10 +538,16 @@ def model_debug():
             except Exception as e:
                 sample_preds = {'error': str(e)}
 
-        return jsonify({'model_layers': layers,
-                        'scaler': scaler_info,
-                        'raw_predictions': raw_preds,
-                        'sample_predictions': sample_preds})
+        return jsonify({
+            'model_layers': layers,
+            'loaded_with': load_mode,
+            'data_length': original_len,
+            'first_dates': first_dates,
+            'last_dates': last_dates,
+            'scaler': scaler_info,
+            'raw_predictions': raw_preds,
+            'sample_predictions': sample_preds
+        })
     except Exception as e:
         import traceback
         tb = traceback.format_exc().splitlines()[-40:]
