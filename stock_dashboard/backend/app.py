@@ -248,6 +248,12 @@ def get_stock_data():
         records = data[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']].to_dict(orient='records')
         return jsonify({'ticker': ticker, 'data': records})
     except Exception as e:
+        # include short traceback when debugging is enabled via env var
+        if os.environ.get('SHOW_MODEL_TRACE') == '1':
+            import traceback
+            tb = traceback.format_exc()
+            # limit size to avoid huge responses
+            return jsonify({'error': str(e), 'traceback': tb.splitlines()[-20:]}), 500
         return jsonify({'error': str(e)}), 500
 
 
