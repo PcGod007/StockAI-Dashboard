@@ -101,6 +101,11 @@ git push -u origin main
 4. Build settings show:
    - Build command: `npm run build` ✓
    - Publish directory: `dist` ✓
+
+   > **Note:** you won't see a `dist` folder in your repository until the build runs. Netlify will create it automatically during the deploy step. If you prefer to test locally, run `npm run build` inside `stock_dashboard/frontend` and you will see the `dist` directory appear.
+   >
+   > The `functions` directory is only needed if you are using Netlify Functions; leave that field blank or create an empty `netlify/functions` folder if not.
+
 5. Click "Deploy"
 
 Wait 2-3 minutes for deployment.
@@ -110,19 +115,25 @@ Wait 2-3 minutes for deployment.
 After deployment completes:
 1. Go to "Site settings"
 2. Click "Build & deploy" → "Environment"
-3. Add variable:
+3. Add variable **exactly** as shown:
    ```
    VITE_API_URL = https://your-railway-url
    ```
-   (Use the Railway URL from Part 1, Step 5)
+   - omit any trailing slash
+   - **do not** append `/api`; the code appends `/api` for you
+   - the name must start with `VITE_` so Vite exposes it to the client
 4. Save
 
 ### Step 5: Trigger Rebuild
 
-Since you added env var after deployment:
-1. Go to "Deploys"
+Because the value affects the build output, you must rebuild after setting it:
+1. Go to "Deploys" for your Netlify site
 2. Click "Trigger deploy" → "Clear cache and redeploy"
-3. Wait for deployment to complete
+3. Wait for deployment to finish
+
+Once the site is live again, open the developer console (F12) and look for the
+`API BASE:` message printed near the top; it should match your Railway URL.
+If it still says `/api`, the env var was not set correctly.
 
 Your frontend is now live at: `https://your-site.netlify.app` ✓
 
