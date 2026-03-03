@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 import yfinance as yf
 from datetime import datetime
 from sklearn.preprocessing import MinMaxScaler
