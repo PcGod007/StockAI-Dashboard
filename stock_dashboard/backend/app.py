@@ -471,6 +471,86 @@ def model_info():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/model-debug', methods=['GET'])
+def model_debug():
+    """Deep debug: load the model, list layers and weight stats, and return
+    a few sample predictions (inverse-transformed) to compare against the
+    historical close values. Accepts `ticker`, `start`, `end` query params.
+    """
+    ticker = request.args.get('ticker', 'AAPL')
+    start = request.args.get('start', '2015-01-01')
+    end = request.args.get('end', datetime.now().strftime('%Y-%m-%d'))
+    try:
+        # load model (reuse same robust logic as /api/predict)
+        try:
+            model = load_model(MODEL_PATH, compile=False)
+        except Exception:
+            # manual fallback
+            with zipfile.ZipFile(MODEL_PATH, 'r') as z:
+                if 'config.json' not in z.namelist():
+                    return jsonify({'error': 'config.json missing in .keras archive'}), 500
+                cfg = z.read('config.json').decode('utf-8')
+                weights_name = None
+                for n in z.namelist():
+                    if n.endswith('.h5'):
+                        weights_name = n
+                        break
+                if not weights_name:
+                    return jsonify({'error': 'no .h5 weights found in archive'}), 500
+                model = model_from_json(cfg)
+                tf_temp = tempfile.NamedTemporaryFile(delete=False, suffix='.h5')
+                try:
+                    tf_temp.write(z.read(weights_name)); tf_temp.flush(); tf_temp.close()
+                    try:
+                        model.load_weights(tf_temp.name, by_name=True, skip_mismatch=True)
+                    except TypeError:
+                        model.load_weights(tf_temp.name, by_name=True)
+                finally:
+                    try: os.unlink(tf_temp.name)
+                    except Exception: pass
+
+        # gather layer info
+        layers = []
+        for layer in model.layers:
+            w_list = layer.weights
+            weights = []
+            for w in w_list:
+                try:
+                    arr = w.numpy()
+                    weights.append({'shape': list(arr.shape), 'mean_abs': float(abs(arr).mean())})
+                except Exception:
+                    weights.append({'shape': 'unknown'})
+            layers.append({'name': layer.name, 'class': layer.__class__.__name__, 'n_weights': len(w_list), 'weights': weights})
+
+        # prepare sample prediction using the same preprocessing
+        data = fetch_stock_data(ticker, start, end)
+        if data.empty:
+            return jsonify({'error': 'no data for provided ticker/range'}), 404
+        data = data.reset_index()
+        x_test_df = data['Close']
+        scaler = MinMaxScaler(feature_range=(0,1))
+        scaled_data = scaler.fit_transform(x_test_df.values.reshape(-1,1))
+        # build x_data as in predict route
+        x_data = []
+        for i in range(100, len(scaled_data)):
+            x_data.append(scaled_data[i-100:i])
+        x_data = np.array(x_data)
+        sample_preds = None
+        if x_data.size:
+            try:
+                preds = model.predict(x_data[:5])
+                inv = scaler.inverse_transform(preds).reshape(-1).tolist()
+                sample_preds = inv
+            except Exception as e:
+                sample_preds = {'error': str(e)}
+
+        return jsonify({'model_layers': layers, 'sample_predictions': sample_preds})
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc().splitlines()[-40:]
+        return jsonify({'error': str(e), 'traceback': tb}), 500
+
+
 if __name__ == '__main__':
     print("🚀 Stock Predictor API running at http://127.0.0.1:5000")
     app.run(debug=True, port=5000)
