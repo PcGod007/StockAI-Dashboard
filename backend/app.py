@@ -14,7 +14,7 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), 'stock_model.h5')
+MODEL_PATH = os.path.join(os.path.dirname(__file__), 'saved_model')
 NEWS_API_KEY = os.environ.get('NEWS_API_KEY', 'db66d6f0a9eb427aa1e69437b75f6f34')
 
 # ─────────────────────────────────────────────────────────────────────────────
