@@ -1,8 +1,7 @@
 flask
 flask-cors
 yfinance
-tensorflow==2.15.0
+tensorflow
 scikit-learn
-numpy
 pandas
 gunicorn
