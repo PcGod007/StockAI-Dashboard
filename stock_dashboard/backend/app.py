@@ -24,9 +24,20 @@ NEWS_API_KEY = os.environ.get('NEWS_API_KEY', 'db66d6f0a9eb427aa1e69437b75f6f34'
 # ─────────────────────────────────────────────────────────────────────────────
 
 def fetch_stock_data(ticker, start, end):
+    # yfinance sometimes ignores the requested start/end range, returning the
+    # full history.  To ensure consistency between local and deployed runs we
+    # explicitly trim the DataFrame by the provided dates.
     data = yf.download(ticker, start=start, end=end, progress=False)
     if isinstance(data.columns, pd.MultiIndex):
         data.columns = data.columns.get_level_values(0)
+    # guarantee datetime index and slice to requested window
+    try:
+        data.index = pd.to_datetime(data.index)
+        # pandas slicing is inclusive of start and end when using .loc
+        data = data.loc[start:end]
+    except Exception:
+        # if conversion fails, just return what yfinance gave us
+        pass
     return data
 
 
@@ -526,6 +537,8 @@ def model_debug():
         data = fetch_stock_data(ticker, start, end)
         if data.empty:
             return jsonify({'error': 'no data for provided ticker/range'}), 404
+        original_len = len(data)
+        # note: after slicing we may have trimmed data; report length for debug
         data = data.reset_index()
         x_test_df = data['Close']
         scaler = MinMaxScaler(feature_range=(0,1))
