@@ -530,21 +530,36 @@ def model_debug():
         x_test_df = data['Close']
         scaler = MinMaxScaler(feature_range=(0,1))
         scaled_data = scaler.fit_transform(x_test_df.values.reshape(-1,1))
+
+        # log scaler bounds and a few scaled samples so we can inspect
+        scaler_info = {
+            'data_min': scaler.data_min_.tolist() if hasattr(scaler, 'data_min_') else None,
+            'data_max': scaler.data_max_.tolist() if hasattr(scaler, 'data_max_') else None,
+            'data_range': scaler.data_range_.tolist() if hasattr(scaler, 'data_range_') else None,
+            'scaled_head': scaled_data[:5].reshape(-1).tolist(),
+            'scaled_tail': scaled_data[-5:].reshape(-1).tolist(),
+        }
+
         # build x_data as in predict route
         x_data = []
         for i in range(100, len(scaled_data)):
             x_data.append(scaled_data[i-100:i])
         x_data = np.array(x_data)
         sample_preds = None
+        raw_preds = None
         if x_data.size:
             try:
-                preds = model.predict(x_data[:5])
-                inv = scaler.inverse_transform(preds).reshape(-1).tolist()
+                raw = model.predict(x_data[:5])
+                raw_preds = raw.reshape(-1).tolist()
+                inv = scaler.inverse_transform(raw).reshape(-1).tolist()
                 sample_preds = inv
             except Exception as e:
                 sample_preds = {'error': str(e)}
 
-        return jsonify({'model_layers': layers, 'sample_predictions': sample_preds})
+        return jsonify({'model_layers': layers,
+                        'scaler': scaler_info,
+                        'raw_predictions': raw_preds,
+                        'sample_predictions': sample_preds})
     except Exception as e:
         import traceback
         tb = traceback.format_exc().splitlines()[-40:]
