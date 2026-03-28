@@ -29,7 +29,7 @@ export default function ModelAnalysisView() {
     const pctColor = r && r.pct_change >= 0 ? 'text-emerald-400' : 'text-rose-400';
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 md:space-y-8">
 
             {/* ── Page header with purple gradient accent ── */}
             <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-950/60 via-[#0d1021] to-[#0d1021] p-6 glow-purple">
@@ -37,13 +37,13 @@ export default function ModelAnalysisView() {
                 <div className="absolute -right-16 -top-16 w-56 h-56 bg-violet-500/10 blur-[80px] rounded-full pointer-events-none" />
                 <div className="absolute left-0 bottom-0 w-32 h-32 bg-blue-500/8 blur-[60px] rounded-full pointer-events-none" />
 
-                <div className="relative flex justify-between items-end gap-4">
+                <div className="relative flex flex-col md:flex-row md:justify-between md:items-end gap-3">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <span className="material-symbols-outlined text-violet-400 text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
                             <span className="text-[10px] font-bold tracking-[0.2em] text-violet-400 uppercase">AI Engine v4</span>
                         </div>
-                        <h1 className="text-3xl font-bold text-white mb-1" style={{ fontFamily: "'Outfit', sans-serif", letterSpacing: '-0.02em' }}>
+                        <h1 className="text-2xl md:text-3xl font-bold text-white mb-1" style={{ fontFamily: "'Outfit', sans-serif", letterSpacing: '-0.02em' }}>
                             Model Analysis
                         </h1>
                         <p className="text-sm text-slate-400 max-w-lg">
@@ -51,9 +51,9 @@ export default function ModelAnalysisView() {
                         </p>
                     </div>
                     {hasPred && (
-                        <div className="text-right shrink-0">
+                        <div className="md:text-right shrink-0">
                             <div className="text-[10px] text-violet-400 tracking-[0.18em] font-bold mb-1 uppercase">Live System Status</div>
-                            <div className="flex items-center gap-2 justify-end">
+                            <div className="flex items-center gap-2 md:justify-end">
                                 <span className="relative flex h-2 w-2">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
@@ -84,7 +84,7 @@ export default function ModelAnalysisView() {
             </div>
 
             {/* ── Chart panel ── */}
-            <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-6 relative overflow-hidden">
+            <div className="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 md:p-6 relative overflow-hidden">
                 <div className="absolute -right-20 -top-20 w-72 h-72 bg-violet-500/[0.06] blur-[100px] rounded-full pointer-events-none" />
                 <div className="relative z-10">
                     <div className="flex items-center gap-2 mb-5">
