@@ -65,8 +65,8 @@ export default function ModelAnalysisView() {
                 </div>
             </div>
 
-            {/* Mobile Run Model Button */}
-            <div className="md:hidden">
+            {/* Run Model Button (Visible everywhere) */}
+            <div className="block">
                 <button
                     onClick={handlePredict}
                     disabled={loadingModel || !hasData}

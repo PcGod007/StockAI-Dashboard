@@ -68,7 +68,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 </nav>
 
                 {/* ── Data Controls ── */}
-                <div className="px-4 mb-5 flex-1">
+                <div className="px-4 mb-5 flex-1 hidden md:block">
                     <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-4 space-y-4">
                         <h4 className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">Data Controls</h4>
 
