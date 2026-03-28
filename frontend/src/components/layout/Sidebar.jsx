@@ -144,7 +144,7 @@ export default function Sidebar({ isOpen, onClose }) {
             </aside>
 
             {/* ── Support Bot panel ── */}
-            {botOpen && <SupportBot onClose={() => setBotOpen(false)} />}
+            <SupportBot isOpen={botOpen} onClose={() => setBotOpen(false)} />
         </>
     );
 }

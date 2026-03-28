@@ -84,7 +84,7 @@ function MsgText({ text }) {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export default function SupportBot({ onClose }) {
+export default function SupportBot({ isOpen, onClose }) {
     const [msgs, setMsgs] = useState([
         { from: 'bot', text: `Hi! I'm **${BOT_NAME}**, the StockAI assistant 👋\n\nI can help you with predictions, the portfolio simulator, news sentiment, order types, and more.\n\nWhat would you like to know?` },
     ]);
@@ -112,8 +112,16 @@ export default function SupportBot({ onClose }) {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-[9990] w-[380px] max-h-[560px] flex flex-col rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border border-white/[0.08]"
-            style={{ fontFamily: "'DM Sans', sans-serif", background: '#0f1623' }}>
+        <>
+            {/* Invisible backdrop to detect clicks outside the bot */}
+            <div 
+                className={`fixed inset-0 z-[9980] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
+                onClick={onClose} 
+            />
+
+            <div 
+                className={`fixed bottom-6 right-6 z-[9990] w-[calc(100vw-48px)] sm:w-[380px] max-h-[560px] flex flex-col rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border border-white/[0.08] transition-all duration-300 transform origin-bottom-right ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4 pointer-events-none'}`}
+                style={{ fontFamily: "'DM Sans', sans-serif", background: '#0f1623' }}>
 
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.07]"
@@ -188,5 +196,6 @@ export default function SupportBot({ onClose }) {
                 </button>
             </div>
         </div>
+        </>
     );
 }

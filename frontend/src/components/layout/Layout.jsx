@@ -8,7 +8,7 @@ export default function Layout({ children }) {
 
     return (
         <div className="bg-[#10131a] text-[#e1e2eb] overflow-hidden min-h-screen">
-            <TopNavbar onMenuClick={() => setIsSidebarOpen(true)} />
+            <TopNavbar onMenuClick={() => setIsSidebarOpen(prev => !prev)} />
             
             <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
             
