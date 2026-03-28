@@ -1,14 +1,14 @@
 import { useEffect, useRef } from 'react';
 import Plotly from 'plotly.js-dist-min';
 
-// Responsive chart height: much taller on mobile to fit the sliders and buttons
-const chartH = () => window.innerWidth <= 480 ? 380 : window.innerWidth <= 768 ? 440 : window.innerWidth <= 1024 ? 500 : 540;
+// Responsive chart height: smaller on mobile, full on desktop
+const chartH = () => window.innerWidth <= 480 ? 260 : window.innerWidth <= 768 ? 330 : window.innerWidth <= 1024 ? 390 : 460;
 
 const LAYOUT_BASE = {
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'transparent',
     font: { family: 'Inter, sans-serif', color: '#8b949e', size: 12 },
-    margin: { l: 60, r: 20, t: 60, b: 90 },
+    margin: { l: 60, r: 20, t: 20, b: 50 },
     xaxis: {
         gridcolor: 'rgba(56,139,253,.08)',
         linecolor: 'rgba(56,139,253,.15)',
@@ -27,13 +27,9 @@ const LAYOUT_BASE = {
         bordercolor: 'rgba(56,139,253,.2)',
         borderwidth: 1,
         font: { size: 11 },
-        orientation: 'h',
-        yanchor: 'top',
-        y: -0.15,
-        xanchor: 'center',
-        x: 0.5
     },
     hovermode: 'x unified',
+    spikedistance: -1,
     hoverlabel: {
         bgcolor: '#0a1628',
         bordercolor: 'rgba(56,139,253,.5)',
@@ -54,9 +50,37 @@ const MA_COLORS = {
     250: '#d29922',
 };
 
+/* ──────────────── Mobile touch-outside dismiss hook ────── */
+function useMobileTouchDismiss(ref) {
+    useEffect(() => {
+        // Only wire up on actual touch devices
+        if (!('ontouchstart' in window)) return;
+
+        const handleTouchStart = (e) => {
+            if (!ref.current) return;
+            // If the touch landed inside the chart, let Plotly handle it normally
+            if (ref.current.contains(e.target)) return;
+            // Touch was outside — clear the spike line by toggling hovermode off then back
+            try {
+                Plotly.relayout(ref.current, { hovermode: false });
+                // Restore after a brief tick so Plotly redraws without the spike
+                requestAnimationFrame(() => {
+                    if (ref.current) {
+                        Plotly.relayout(ref.current, { hovermode: 'x unified' });
+                    }
+                });
+            } catch (_) { /* chart may not be initialised yet */ }
+        };
+
+        document.addEventListener('touchstart', handleTouchStart, { passive: true });
+        return () => document.removeEventListener('touchstart', handleTouchStart);
+    }, [ref]);
+}
+
 /* ──────────────── Moving Average Chart ──────────────────── */
 export function MAChart({ data, windows }) {
     const ref = useRef(null);
+    useMobileTouchDismiss(ref);
 
     useEffect(() => {
         if (!ref.current || !data) return;
@@ -97,6 +121,7 @@ export function MAChart({ data, windows }) {
 /* ──────────────── Prediction Chart ─────────────────────── */
 export function PredictionChart({ data }) {
     const ref = useRef(null);
+    useMobileTouchDismiss(ref);
 
     useEffect(() => {
         if (!ref.current || !data) return;
@@ -172,12 +197,13 @@ export function PredictionChart({ data }) {
         }, CONFIG);
     }, [data]);
 
-    return <div ref={ref} style={{ width: '100%', height: chartH() }} />;
+    return <div ref={ref} style={{ width: '100%', height: 460 }} />;
 }
 
 /* ──────────────── Overview Candlestick Chart ────────────── */
 export function OverviewChart({ data, defaultZoomDays = 252 }) {
     const ref = useRef(null);
+    useMobileTouchDismiss(ref);
 
     useEffect(() => {
         if (!ref.current || !data || data.length === 0) return;

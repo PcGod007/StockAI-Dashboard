@@ -135,28 +135,45 @@ export default function TutorialOverlay({ step, steps = TUTORIALS.EQUITY, onClos
         { top: 0, left: 0, width: W, height: H, key: 'full' },
     ];
 
+    const BLOB_H_EST = 230; // approx card height for clamping
+    const isMobile = W < 768;
+    const centerL = Math.max(8, Math.min((W - BLOB_W) / 2, W - BLOB_W - 8));
+
     const getBlobStyle = () => {
         if (!current.target || !rect) return { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 9999 };
-        
+
         let t, l;
-        if (current.arrowSide === 'bottom') {
-            t = hTop - 200; // Place well above
-            l = Math.max(8, Math.min(rect.left, W - 324));
-        } else if (current.arrowSide === 'top') {
-            t = hBottom + 8; // Place below
-            l = Math.max(8, Math.min(rect.left, W - 324));
-        } else if (current.arrowSide === 'left') {
-            t = Math.max(8, rect.top - 12);
-            l = Math.max(8, hLeft - 320); // Place left
+
+        if (isMobile) {
+            // Always center horizontally and place ABOVE target if room, else BELOW
+            l = centerL;
+            const aboveT = hTop - BLOB_H_EST - 24; // Increased margin
+            if (aboveT >= 20) {
+                t = aboveT;
+            } else {
+                t = hBottom + 24; // Increased margin to ensure no overlap
+            }
         } else {
-            t = hBottom + 8;
-            l = Math.max(8, rect.left);
+            // Desktop: existing directional logic
+            if (current.arrowSide === 'bottom') {
+                t = hTop - 200;
+                l = Math.max(8, Math.min(rect.left, W - BLOB_W - 8));
+            } else if (current.arrowSide === 'top') {
+                t = hBottom + 8;
+                l = Math.max(8, Math.min(rect.left, W - BLOB_W - 8));
+            } else if (current.arrowSide === 'left') {
+                t = Math.max(8, rect.top - 12);
+                l = Math.max(8, hLeft - BLOB_W);
+            } else {
+                t = hBottom + 8;
+                l = Math.max(8, rect.left);
+            }
         }
 
-        // Clamp safely to screen bounds
-        t = Math.max(8, Math.min(t, H - 250));
-        l = Math.max(8, Math.min(l, W - 324));
-        
+        // Clamp to screen bounds
+        t = Math.max(8, Math.min(t, H - BLOB_H_EST - 8));
+        l = Math.max(8, Math.min(l, W - BLOB_W - 8));
+
         return { position: 'fixed', top: t, left: l, zIndex: 9999 };
     };
 
@@ -173,7 +190,7 @@ export default function TutorialOverlay({ step, steps = TUTORIALS.EQUITY, onClos
                 <div className={isClosing ? 'animate-blob-out' : 'animate-blob'} style={{
                     position: 'relative', background: '#060e1c', border: '2px solid rgba(250,204,21,0.7)',
                     borderRadius: 16, boxShadow: '0 25px 50px rgba(0,0,0,0.6), 0 0 40px rgba(250,204,21,0.08)',
-                    padding: '20px', width: 308, overflow: 'hidden',
+                    padding: '20px', width: BLOB_W, overflow: 'hidden',
                 }}>
                     {isTimed && (
                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'rgba(250,204,21,0.15)' }}>
