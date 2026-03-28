@@ -7,7 +7,7 @@ export default function Layout({ children }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     return (
-        <div className="bg-[#10131a] text-[#e1e2eb] overflow-hidden min-h-screen">
+        <div className="bg-[#10131a] text-[#e1e2eb] min-h-screen">
             <TopNavbar onMenuClick={() => setIsSidebarOpen(prev => !prev)} />
             
             <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
@@ -21,7 +21,7 @@ export default function Layout({ children }) {
             )}
 
             {/* Main Content Canvas */}
-            <main className="md:ml-72 mt-16 p-4 md:p-6 h-[calc(100vh-64px)] overflow-y-auto custom-scrollbar bg-transparent">
+            <main className="md:ml-72 mt-16 p-4 md:p-6 h-[calc(100vh-64px)] overflow-y-auto overflow-x-hidden custom-scrollbar bg-transparent">
                 {children}
             </main>
 

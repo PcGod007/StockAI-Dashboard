@@ -77,7 +77,7 @@ export default function DashboardView() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-12 gap-6">
+            <div className="grid grid-cols-12 gap-4 md:gap-6">
                 {/* Main Candlestick Chart (Hero Widget) */}
                 <div className="col-span-12 xl:col-span-8 bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden flex flex-col min-h-[500px] shadow-2xl shadow-black/20">
                     <div className="p-4 flex items-center justify-between bg-white/[0.02] border-b border-white/[0.06]">
