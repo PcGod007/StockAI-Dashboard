@@ -2,7 +2,7 @@
 [build]
   base    = "frontend"          # run build commands from here
   command = "npm run build"
-  publish = "frontend/out"      # folder Netlify deploys
+  publish = "out"               # folder Netlify deploys (relative to base)
 
 # ─── API Proxy Redirect (Avoids CORS, seamless integration) ────────
 [[redirects]]
