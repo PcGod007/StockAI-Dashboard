@@ -1,14 +1,14 @@
 import { useEffect, useRef } from 'react';
 import Plotly from 'plotly.js-dist-min';
 
-// Responsive chart height: smaller on mobile, full on desktop
-const chartH = () => window.innerWidth <= 480 ? 260 : window.innerWidth <= 768 ? 330 : window.innerWidth <= 1024 ? 390 : 460;
+// Responsive chart height: much taller on mobile to fit the sliders and buttons
+const chartH = () => window.innerWidth <= 480 ? 380 : window.innerWidth <= 768 ? 440 : window.innerWidth <= 1024 ? 500 : 540;
 
 const LAYOUT_BASE = {
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'transparent',
     font: { family: 'Inter, sans-serif', color: '#8b949e', size: 12 },
-    margin: { l: 60, r: 20, t: 20, b: 50 },
+    margin: { l: 60, r: 20, t: 60, b: 50 },
     xaxis: {
         gridcolor: 'rgba(56,139,253,.08)',
         linecolor: 'rgba(56,139,253,.15)',
