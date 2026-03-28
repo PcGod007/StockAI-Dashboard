@@ -6,7 +6,7 @@ export default function NewsSentimentView() {
 
     if (!hasNews) {
         return (
-            <div className="p-8 max-w-7xl mx-auto h-[70vh] flex flex-col items-center justify-center text-center">
+            <div className="p-2 md:p-8 max-w-7xl mx-auto h-[70vh] flex flex-col items-center justify-center text-center">
                 <div className="w-20 h-20 rounded-full bg-teal-500/10 border border-teal-500/20 flex items-center justify-center mb-6">
                     <span className="material-symbols-outlined text-4xl text-teal-400 opacity-60">newspaper</span>
                 </div>
@@ -36,7 +36,7 @@ export default function NewsSentimentView() {
     const topBorder   = isBullish ? 'border-emerald-500'  : isBearish ? 'border-rose-500'     : 'border-slate-500';
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-2 md:p-8 max-w-7xl mx-auto space-y-6 md:space-y-8">
 
             {/* ── Hero header ── */}
             <div className={`relative overflow-hidden rounded-2xl border ${accentBorder} bg-gradient-to-br ${headerGrad} via-[#0d1021] to-[#0d1021] p-6 ${glowClass}`}>

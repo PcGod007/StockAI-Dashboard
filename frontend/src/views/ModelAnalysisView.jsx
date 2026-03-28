@@ -29,7 +29,7 @@ export default function ModelAnalysisView() {
     const pctColor = r && r.pct_change >= 0 ? 'text-emerald-400' : 'text-rose-400';
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 md:space-y-8">
+        <div className="p-2 md:p-8 max-w-7xl mx-auto space-y-4 md:space-y-8">
 
             {/* ── Page header with purple gradient accent ── */}
             <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-950/60 via-[#0d1021] to-[#0d1021] p-6 glow-purple">
@@ -93,7 +93,7 @@ export default function ModelAnalysisView() {
                             AI Forecast Engine
                         </h3>
                     </div>
-                    <div className="w-full h-[500px] bg-slate-950/50 rounded-xl overflow-hidden border border-white/[0.05] flex items-center justify-center">
+                    <div className="w-full h-[480px] md:h-[580px] bg-slate-950/50 rounded-xl overflow-hidden border border-white/[0.05] flex items-center justify-center">
                         {hasPred ? (
                             <PredictionChart data={predData} />
                         ) : (
