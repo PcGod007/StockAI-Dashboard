@@ -239,19 +239,19 @@ export default function DashboardView() {
                                 const tagColor = bull ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : bear ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-slate-500/10 text-slate-400 border-slate-500/20';
 
                                 return (
-                                    <div key={i} className="p-5 hover:bg-white/[0.04] transition-colors cursor-pointer group" onClick={() => window.open(article.url, '_blank')}>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest line-clamp-1 mr-2">
+                                    <div key={i} className="p-3 md:p-5 hover:bg-white/[0.04] transition-colors cursor-pointer group" onClick={() => window.open(article.url, '_blank')}>
+                                        <div className="flex items-center justify-between mb-2 md:mb-3">
+                                            <span className="text-[8px] md:text-[9px] text-slate-500 font-bold uppercase tracking-widest line-clamp-1 mr-2">
                                                 {article.source} · {article.published_at ? new Date(article.published_at).toLocaleDateString() : ''}
                                             </span>
-                                            <span className={`px-2 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider ${tagColor}`}>
+                                            <span className={`px-1.5 py-0.5 rounded border text-[8px] md:text-[9px] font-bold uppercase tracking-wider ${tagColor}`}>
                                                 {article.sentiment}
                                             </span>
                                         </div>
-                                        <h4 className="text-sm font-semibold text-slate-200 group-hover:text-blue-400 transition-colors leading-snug line-clamp-2" title={article.title}>
+                                        <h4 className="text-xs md:text-sm font-semibold text-slate-200 group-hover:text-blue-400 transition-colors leading-snug line-clamp-2" title={article.title}>
                                             {article.title}
                                         </h4>
-                                        <p className="text-[11px] text-slate-500 mt-2 line-clamp-2 leading-relaxed" title={article.description}>
+                                        <p className="hidden md:block text-[11px] text-slate-500 mt-2 line-clamp-2 leading-relaxed" title={article.description}>
                                             {article.description}
                                         </p>
                                     </div>
