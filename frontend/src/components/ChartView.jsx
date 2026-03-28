@@ -167,7 +167,7 @@ export function PredictionChart({ data }) {
         }, CONFIG);
     }, [data]);
 
-    return <div ref={ref} style={{ width: '100%', height: 460 }} />;
+    return <div ref={ref} style={{ width: '100%', height: chartH() }} />;
 }
 
 /* ──────────────── Overview Candlestick Chart ────────────── */

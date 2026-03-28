@@ -10,7 +10,7 @@ const MENU_ITEMS = [
     { id: 'portfolio',     path: '/portfolio',  label: 'Portfolio Simulator',icon: 'account_balance' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
     const navigate = useNavigate();
     const { ticker, setTicker, start, setStart, end, setEnd,
              handleFetch, handlePredict, loading, hasData } = useAppContext();
@@ -20,7 +20,7 @@ export default function Sidebar() {
     return (
         <>
             <aside style={{ fontFamily: "'DM Sans', sans-serif" }}
-                className="fixed left-0 top-16 h-[calc(100vh-64px)] w-72 bg-[#0c0f19] border-r border-white/[0.05] flex flex-col py-6 z-40 overflow-y-auto overflow-x-hidden custom-scrollbar">
+                className={`fixed left-0 top-16 h-[calc(100vh-64px)] w-72 bg-[#0c0f19] border-r border-white/[0.05] flex flex-col py-6 z-40 overflow-y-auto overflow-x-hidden custom-scrollbar transition-transform duration-300 md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
 
                 {/* ── User badge ── */}
                 <div className="px-5 mb-5 shrink-0">
@@ -42,6 +42,7 @@ export default function Sidebar() {
                         <NavLink
                             key={item.id}
                             to={item.path}
+                            onClick={() => onClose && onClose()}
                             className={({ isActive }) =>
                                 `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium group
                                 ${isActive

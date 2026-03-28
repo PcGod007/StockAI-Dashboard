@@ -8,7 +8,7 @@ const NAV_LINKS = [
     { label: 'Execution',   path: '/portfolio' },
 ];
 
-export default function TopNavbar() {
+export default function TopNavbar({ onMenuClick }) {
     const { balance, newsData, hasNews, ticker } = useAppContext();
     const [bellOpen, setBellOpen] = useState(false);
     const bellRef = useRef(null);
@@ -35,10 +35,18 @@ export default function TopNavbar() {
             className="fixed top-0 w-full z-50 bg-[#0a0d14]/90 backdrop-blur-2xl border-b border-white/[0.06] flex items-center justify-between px-6 h-16 shadow-2xl shadow-black/40">
 
             {/* ── Left: logo + nav links ── */}
-            <div className="flex items-center gap-10">
+            <div className="flex items-center gap-3 md:gap-10">
+                {/* Mobile Menu Button */}
+                <button 
+                    onClick={onMenuClick} 
+                    className="md:hidden flex items-center justify-center p-1 -ml-2 text-slate-400 hover:text-white transition-colors"
+                >
+                    <span className="material-symbols-outlined text-[26px]">menu</span>
+                </button>
+
                 {/* Logo */}
                 <NavLink to="/dashboard" className="flex items-center gap-2 group">
-                    <div className="w-7 h-7 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                    <div className="hidden sm:flex w-7 h-7 rounded-md bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
                         <span className="material-symbols-outlined text-white text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>trending_up</span>
                     </div>
                     <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, letterSpacing: '-0.03em' }}
@@ -153,7 +161,7 @@ export default function TopNavbar() {
                 </div>
 
                 {/* Wallet badge */}
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/[0.08] border border-blue-500/20 text-blue-400">
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/[0.08] border border-blue-500/20 text-blue-400">
                     <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance_wallet</span>
                     <span className="text-xs font-bold">
                         ${(balance ?? 10000).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
