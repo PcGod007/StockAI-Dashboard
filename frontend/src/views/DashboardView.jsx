@@ -9,7 +9,7 @@ export default function DashboardView() {
     } = useAppContext();
 
     return (
-        <div className="space-y-8 max-w-[1600px] mx-auto">
+        <div className="space-y-8 max-w-[1600px] mx-auto w-full overflow-hidden">
             {/* ── Page header ── */}
             <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
                 <div className="space-y-1">
