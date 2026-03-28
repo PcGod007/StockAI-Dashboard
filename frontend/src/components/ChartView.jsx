@@ -8,7 +8,7 @@ const LAYOUT_BASE = {
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'transparent',
     font: { family: 'Inter, sans-serif', color: '#8b949e', size: 12 },
-    margin: { l: 60, r: 20, t: 20, b: 50 },
+    margin: { l: 60, r: 20, t: 20, b: 80 },
     xaxis: {
         gridcolor: 'rgba(56,139,253,.08)',
         linecolor: 'rgba(56,139,253,.15)',
@@ -27,6 +27,11 @@ const LAYOUT_BASE = {
         bordercolor: 'rgba(56,139,253,.2)',
         borderwidth: 1,
         font: { size: 11 },
+        orientation: 'h',
+        x: 0.5,
+        xanchor: 'center',
+        y: -0.12,
+        yanchor: 'top',
     },
     hovermode: 'x unified',
     spikedistance: -1,
@@ -56,24 +61,56 @@ function useMobileTouchDismiss(ref) {
         // Only wire up on actual touch devices
         if (!('ontouchstart' in window)) return;
 
+        let restoreTimer = null;
+
+        const hideSpike = () => {
+            if (!ref.current) return;
+            // 1. Immediately hide hover layer via DOM for instant visual effect
+            const hoverlayer = ref.current.querySelector('g.hoverlayer');
+            if (hoverlayer) hoverlayer.style.display = 'none';
+            // Also target any stray spike line elements outside hoverlayer
+            ref.current.querySelectorAll('line.spikeline').forEach(el => { el.style.display = 'none'; });
+        };
+
+        const showSpike = () => {
+            if (!ref.current) return;
+            const hoverlayer = ref.current.querySelector('g.hoverlayer');
+            if (hoverlayer) hoverlayer.style.display = '';
+            ref.current.querySelectorAll('line.spikeline').forEach(el => { el.style.display = ''; });
+        };
+
         const handleTouchStart = (e) => {
             if (!ref.current) return;
-            // If the touch landed inside the chart, let Plotly handle it normally
-            if (ref.current.contains(e.target)) return;
-            // Touch was outside — clear the spike line by toggling hovermode off then back
+
+            if (ref.current.contains(e.target)) {
+                // Touch inside chart — restore hover immediately
+                clearTimeout(restoreTimer);
+                showSpike();
+                try { Plotly.relayout(ref.current, { hovermode: 'x unified' }); } catch (_) {}
+                return;
+            }
+
+            // Touch outside — hide spike instantly, then let Plotly reset state
+            hideSpike();
+            clearTimeout(restoreTimer);
             try {
-                Plotly.relayout(ref.current, { hovermode: false });
-                // Restore after a brief tick so Plotly redraws without the spike
-                requestAnimationFrame(() => {
-                    if (ref.current) {
-                        Plotly.relayout(ref.current, { hovermode: 'x unified' });
-                    }
+                Plotly.relayout(ref.current, { hovermode: false }).then(() => {
+                    // Restore hovermode after 500ms so the next in-chart touch works
+                    restoreTimer = setTimeout(() => {
+                        showSpike();
+                        if (ref.current) {
+                            Plotly.relayout(ref.current, { hovermode: 'x unified' }).catch(() => {});
+                        }
+                    }, 500);
                 });
-            } catch (_) { /* chart may not be initialised yet */ }
+            } catch (_) { /* chart not yet initialised */ }
         };
 
         document.addEventListener('touchstart', handleTouchStart, { passive: true });
-        return () => document.removeEventListener('touchstart', handleTouchStart);
+        return () => {
+            document.removeEventListener('touchstart', handleTouchStart);
+            clearTimeout(restoreTimer);
+        };
     }, [ref]);
 }
 
