@@ -77,7 +77,7 @@ export default function Sidebar({ isOpen, onClose }) {
                             <div className="relative">
                                 <span className="material-symbols-outlined absolute left-2.5 top-1.5 text-[15px] text-slate-500">search</span>
                                 <input
-                                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg py-1.5 pl-12 pr-2 text-sm text-slate-100
+                                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg py-1.5 pl-10 pr-2 text-sm text-slate-100
                                         focus:outline-none focus:border-blue-500/50 transition-colors placeholder-slate-600"
                                     value={ticker}
                                     onChange={e => setTicker(e.target.value.toUpperCase())}
