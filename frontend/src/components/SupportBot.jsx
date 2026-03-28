@@ -4,7 +4,7 @@
  */
 import React, { useState, useRef, useEffect } from 'react';
 
-const BOT_NAME = 'Aria';
+const BOT_NAME = 'Warren';
 const USER_AVATAR = '🧑';
 
 // ── Knowledge base ────────────────────────────────────────────────────────────
@@ -89,6 +89,7 @@ export default function SupportBot({ onClose }) {
         { from: 'bot', text: `Hi! I'm **${BOT_NAME}**, the StockAI assistant 👋\n\nI can help you with predictions, the portfolio simulator, news sentiment, order types, and more.\n\nWhat would you like to know?` },
     ]);
     const [input, setInput] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
     const bottomRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -99,9 +100,15 @@ export default function SupportBot({ onClose }) {
         const trimmed = input.trim();
         if (!trimmed) return;
         const userMsg = { from: 'user', text: trimmed };
-        const botMsg  = { from: 'bot', text: getBotReply(trimmed) };
-        setMsgs(prev => [...prev, userMsg, botMsg]);
+        setMsgs(prev => [...prev, userMsg]);
         setInput('');
+        setIsTyping(true);
+
+        setTimeout(() => {
+            const botMsg  = { from: 'bot', text: getBotReply(trimmed) };
+            setMsgs(prev => [...prev, botMsg]);
+            setIsTyping(false);
+        }, 1500);
     };
 
     return (
@@ -141,6 +148,17 @@ export default function SupportBot({ onClose }) {
                         </div>
                     </div>
                 ))}
+                
+                {isTyping && (
+                    <div className="flex items-end gap-2 flex-row">
+                        <span className="text-[18px] shrink-0">🤖</span>
+                        <div className="px-3.5 py-3 rounded-2xl bg-white/[0.06] text-slate-400 rounded-bl-sm border border-white/[0.06] flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                    </div>
+                )}
                 <div ref={bottomRef} />
             </div>
 
