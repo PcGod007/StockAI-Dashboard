@@ -113,6 +113,12 @@ export default function DashboardView() {
                             </div>
                         )}
                     </div>
+                    {hasData && (
+                        <div className="py-2.5 px-4 bg-white/[0.015] border-t border-white/[0.06] text-center">
+                            <span className="md:hidden text-[9px] text-slate-500 font-bold uppercase tracking-widest">Double tap graph to reset zoom</span>
+                            <span className="hidden md:inline text-[10px] text-slate-500 font-bold uppercase tracking-widest">Double click / tap graph to reset zoom</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Right Column: Sentiment & Insights Widgets */}

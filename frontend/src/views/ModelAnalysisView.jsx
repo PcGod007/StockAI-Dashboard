@@ -109,6 +109,14 @@ export default function ModelAnalysisView() {
                 </div>
             </div>
 
+            {/* Zoom reset hint */}
+            {hasPred && (
+                <div className="py-2.5 px-4 bg-white/[0.015] border border-white/[0.06] rounded-xl text-center">
+                    <span className="md:hidden text-[9px] text-slate-500 font-bold uppercase tracking-widest">Double tap graph to reset zoom</span>
+                    <span className="hidden md:inline text-[10px] text-slate-500 font-bold uppercase tracking-widest">Double click / tap graph to reset zoom</span>
+                </div>
+            )}
+
             {/* ── Reasoning section ── */}
             {hasPred && r && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

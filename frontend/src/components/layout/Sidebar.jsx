@@ -65,6 +65,16 @@ export default function Sidebar({ isOpen, onClose }) {
                             )}
                         </NavLink>
                     ))}
+
+                    {/* Mobile-only Support & Help — sits right below nav items */}
+                    <button
+                        onClick={() => { setBotOpen(true); onClose && onClose(); }}
+                        className="md:hidden w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium text-slate-400 hover:text-slate-100 hover:bg-white/[0.04] group mt-0.5">
+                        <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform text-blue-400"
+                            style={{ fontVariationSettings: "'FILL' 1" }}>support_agent</span>
+                        <span>Support &amp; Help</span>
+                        <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-bold">AI</span>
+                    </button>
                 </nav>
 
                 {/* ── Data Controls ── */}
@@ -129,8 +139,8 @@ export default function Sidebar({ isOpen, onClose }) {
                     </div>
                 </div>
 
-                {/* ── Support Bot button ── */}
-                <div className="mt-auto px-4 shrink-0 pb-4">
+                {/* ── Support Bot button (desktop only) ── */}
+                <div className="hidden md:block mt-auto px-4 shrink-0 pb-4">
                     <button
                         onClick={() => setBotOpen(true)}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium
