@@ -8,7 +8,7 @@ const LAYOUT_BASE = {
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'transparent',
     font: { family: 'Inter, sans-serif', color: '#8b949e', size: 12 },
-    margin: { l: 60, r: 20, t: 60, b: 50 },
+    margin: { l: 60, r: 20, t: 60, b: 90 },
     xaxis: {
         gridcolor: 'rgba(56,139,253,.08)',
         linecolor: 'rgba(56,139,253,.15)',
@@ -27,6 +27,11 @@ const LAYOUT_BASE = {
         bordercolor: 'rgba(56,139,253,.2)',
         borderwidth: 1,
         font: { size: 11 },
+        orientation: 'h',
+        yanchor: 'top',
+        y: -0.15,
+        xanchor: 'center',
+        x: 0.5
     },
     hovermode: 'x unified',
     hoverlabel: {

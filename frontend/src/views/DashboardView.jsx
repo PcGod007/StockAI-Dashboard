@@ -3,7 +3,10 @@ import { useAppContext } from '../AppContext';
 import { OverviewChart } from '../components/ChartView';
 
 export default function DashboardView() {
-    const { ticker, stockData, hasData, stats, newsData, hasPred, predData, hasNews } = useAppContext();
+    const { 
+        ticker, setTicker, start, setStart, end, setEnd, handleFetch, loading, 
+        stockData, hasData, stats, newsData, hasPred, predData, hasNews 
+    } = useAppContext();
 
     return (
         <div className="space-y-8 max-w-[1600px] mx-auto">
@@ -39,6 +42,39 @@ export default function DashboardView() {
                         </div>
                     </div>
                 )}
+            </div>
+
+            {/* Mobile Data Controls */}
+            <div className="md:hidden bg-[#0c0f19] border border-white/[0.06] rounded-xl p-4 shadow-xl shadow-black/20">
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <label className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Ticker</label>
+                        <div className="relative">
+                            <span className="material-symbols-outlined absolute left-2.5 top-1.5 text-[15px] text-slate-500">search</span>
+                            <input
+                                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg py-1.5 pl-10 pr-2 text-sm text-slate-100 focus:outline-none focus:border-blue-500/50 transition-colors placeholder-slate-600"
+                                value={ticker}
+                                onChange={e => setTicker(e.target.value.toUpperCase())}
+                                placeholder="AAPL, NVDA…"
+                                onKeyDown={e => e.key === 'Enter' && !loading && handleFetch()}
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                            <label className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Start</label>
+                            <input type="date" value={start} onChange={e => setStart(e.target.value)} className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg py-1 px-2 text-[11px] text-slate-100 outline-none" />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">End</label>
+                            <input type="date" value={end} onChange={e => setEnd(e.target.value)} className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg py-1 px-2 text-[11px] text-slate-100 outline-none" />
+                        </div>
+                    </div>
+                    <button onClick={handleFetch} disabled={loading || !ticker?.trim()} className="w-full flex items-center justify-center gap-2 py-2 rounded-lg font-semibold text-[11px] uppercase tracking-widest transition-all bg-blue-500/[0.1] active:bg-blue-500/20 text-blue-400 border border-blue-500/20 disabled:opacity-40">
+                        {loading ? <span className="material-symbols-outlined text-[14px] animate-spin">autorenew</span> : <span className="material-symbols-outlined text-[14px]">download</span>}
+                        Fetch Data
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-12 gap-6">

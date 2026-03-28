@@ -200,8 +200,8 @@ export default function PortfolioView() {
             </Modal>
 
             {/* Header */}
-            <div className="flex flex-col md:flex-row items-end justify-between gap-6 mb-10">
-                <div className="space-y-1">
+            <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-10">
+                <div className="space-y-1 w-full md:w-auto">
                     <h1 className="font-headline text-4xl font-bold tracking-tight text-white mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>PORTFOLIO SIMULATOR</h1>
                     <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
                         <p className="text-slate-400 text-sm font-label tracking-wide uppercase">AI-ORCHESTRATED TRADING SANDBOX</p>
@@ -213,7 +213,7 @@ export default function PortfolioView() {
                         </button>
                     </div>
                 </div>
-                <div id="sim-netliq-display" className="bg-white/[0.03] p-6 min-w-[340px] rounded-xl relative overflow-hidden border border-white/[0.06]">
+                <div id="sim-netliq-display" className="bg-white/[0.03] p-6 w-full md:w-auto min-w-[340px] rounded-xl relative overflow-hidden border border-white/[0.06]">
                     <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 rounded-l-xl" />
                     <div className="text-[10px] text-slate-500 font-bold tracking-tighter uppercase mb-2">Simulated Net Liq Value</div>
                     <div className="flex items-baseline gap-2">

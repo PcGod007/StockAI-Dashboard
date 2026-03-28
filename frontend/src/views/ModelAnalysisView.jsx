@@ -3,7 +3,7 @@ import { useAppContext } from '../AppContext';
 import { PredictionChart } from '../components/ChartView';
 
 export default function ModelAnalysisView() {
-    const { predData, hasPred } = useAppContext();
+    const { predData, hasPred, handlePredict, loadingModel, hasData } = useAppContext();
     const r = hasPred ? predData.reasoning : null;
 
     const verdictGrad = !r ? 'text-gradient-blue'
@@ -63,6 +63,24 @@ export default function ModelAnalysisView() {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* Mobile Run Model Button */}
+            <div className="md:hidden">
+                <button
+                    onClick={handlePredict}
+                    disabled={loadingModel || !hasData}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-sm tracking-[0.15em] uppercase transition-all bg-gradient-to-br from-violet-600 to-indigo-700 active:scale-[0.98] text-white shadow-xl shadow-violet-500/20 glow-purple disabled:opacity-40"
+                    title={!hasData ? "Fetch data first before running model" : ""}
+                >
+                    {loadingModel ? <span className="material-symbols-outlined animate-spin text-[18px]">autorenew</span> : <span className="material-symbols-outlined text-[18px]">psychology</span>}
+                    {loadingModel ? 'Analyzing...' : 'Run AI Model'}
+                </button>
+                {!hasData && (
+                    <p className="text-[10px] text-rose-400 text-center mt-2 font-semibold uppercase tracking-widest">
+                        Data required. Fetch a ticker in dashboard.
+                    </p>
+                )}
             </div>
 
             {/* ── Chart panel ── */}
