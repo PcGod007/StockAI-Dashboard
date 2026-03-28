@@ -1,0 +1,34 @@
+# Design Proposal: PC-StockAI Redesign
+
+## Core Concept
+Transform the current tool from a simple chart display into a comprehensive "Investment Co-pilot." The focus is on **Explainable AI (XAI)**, showing not just *what* the prediction is, but *why* the LSTM model arrived at that conclusion.
+
+## Key Features & Screens
+
+### 1. Main Prediction Dashboard (The "Command Center")
+*   **Interactive Price Chart:** High-fidelity candlestick chart with overlaid LSTM prediction bands (confidence intervals).
+*   **Predictive Indicators:** Visualizing the "Sentiment Score" (Real-time news/social) and technical indicators (RSI, MACD) that fed into the model.
+*   **Real-Time Ticker & Alerts:** A sidebar for live stock updates and AI-generated "Trend Reversal" alerts.
+
+### 2. Model "Glass Box" View (Interactive Education)
+*   **Model Performance Metrics:** Interactive cards showing RMSE, MAPE, and historical accuracy.
+*   **Feature Importance Map:** A visualization showing which factors (e.g., historical price, news sentiment, volume) most heavily influenced the current forecast.
+*   **Hyperparameter "Playground":** A section for advanced users to adjust look-back periods or model sensitivity to see how it affects predictions.
+
+### 3. News & Sentiment Analysis Hub
+*   **Contextual News Feed:** Real-time articles tagged with sentiment impact (Positive/Negative) linked to specific price movements on the chart.
+*   **Social Sentiment Heatmap:** Visual representation of market mood.
+
+### 4. Portfolio Simulation (The "Play" Element)
+*   **Mock Trade Execution:** Allow users to "test" the AI's prediction by placing hypothetical trades and tracking their "profit/loss" in a safe environment.
+
+## Design Aesthetic
+*   **"Pro-Terminal" Dark Mode:** A sleek, high-contrast dark theme (Slate & Deep Navy) with vibrant accents (Emerald for gains, Ruby for losses, Electric Blue for AI predictions).
+*   **Modular Grid:** A "cockpit" style layout using card-based components for a dense but organized information display.
+*   **Micro-interactions:** Smooth transitions and data-loading animations to give a high-performance feel.
+
+## Next Steps
+1. Create the **Design System** (Colors, Typography, Components).
+2. Design the **Main Prediction Dashboard**.
+3. Design the **Model Explanation / Education View**.
+4. Design the **News & Sentiment Hub**.
