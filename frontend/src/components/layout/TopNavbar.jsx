@@ -95,7 +95,7 @@ export default function TopNavbar({ onMenuClick }) {
                     </button>
 
                     {/* Dropdown panel */}
-                    <div className={`absolute right-0 mt-2 w-[360px] bg-[#0f1623] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden
+                    <div className={`absolute right-0 mt-2 w-[calc(100vw-1.5rem)] sm:w-[360px] max-w-[360px] bg-[#0f1623] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden
                         transition-all duration-300 origin-top-right
                         ${bellOpen ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}>
 
