@@ -4,6 +4,13 @@
   command = "npm run build"
   publish = "frontend/out"      # folder Netlify deploys
 
+# ─── API Proxy Redirect (Avoids CORS, seamless integration) ────────
+[[redirects]]
+  from   = "/api/*"
+  to     = "https://stock-predictor-api-6opv.onrender.com/api/:splat"
+  status = 200
+  force  = true
+
 # ─── SPA Redirect (React Router / client-side routing) ────────────
 [[redirects]]
   from   = "/*"
