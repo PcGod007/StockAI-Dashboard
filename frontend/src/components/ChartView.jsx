@@ -315,5 +315,5 @@ export function OverviewChart({ data, defaultZoomDays = 252 }) {
         }, CONFIG);
     }, [data]);
 
-    return <div ref={ref} style={{ width: '100%', height: chartH() }} />;
+    return <div ref={ref} style={{ width: '100%', height: '100%' }} />;
 }

@@ -79,7 +79,7 @@ export default function DashboardView() {
 
             <div className="grid grid-cols-12 gap-4 md:gap-6">
                 {/* Main Candlestick Chart (Hero Widget) */}
-                <div className="col-span-12 xl:col-span-8 bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden flex flex-col min-h-[500px] shadow-2xl shadow-black/20">
+                <div className="col-span-12 xl:col-span-8 bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden flex flex-col md:min-h-[500px] shadow-2xl shadow-black/20">
                     <div className="p-4 flex items-center justify-between bg-white/[0.02] border-b border-white/[0.06]">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
@@ -99,7 +99,7 @@ export default function DashboardView() {
                             <button className="px-3 py-1 rounded-md text-[10px] font-bold text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors">1W</button>
                         </div>
                     </div>
-                    <div className="flex-1 relative min-h-[460px] bg-[#0c0f19]">
+                    <div className="flex-1 relative min-h-[280px] md:min-h-[460px] bg-[#0c0f19]">
                         {hasData ? (
                             <div className="absolute inset-2">
                                 <OverviewChart data={stockData} />
