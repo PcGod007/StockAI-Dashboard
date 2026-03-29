@@ -9,7 +9,7 @@ const LAYOUT_BASE = {
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'transparent',
     font: { family: 'Inter, sans-serif', color: '#8b949e', size: 12 },
-    margin: { l: 60, r: 20, t: 20, b: 80 },
+    margin: { l: 60, r: 20, t: 5, b: 80 }, // t: 5 because external React toolbar handles title & tabs
     xaxis: {
         gridcolor: 'rgba(56,139,253,.08)',
         linecolor: 'rgba(56,139,253,.15)',
@@ -280,14 +280,12 @@ export function OverviewChart({ data, defaultZoomDays = 252 }) {
 
         Plotly.react(ref.current, traces, {
             ...LAYOUT_BASE,
-            // On mobile: remove title (card header already says "Price Action") and
-            // give the rangeselector 50px of top breathing room so it doesn't overlap data
+            // Maximize chart area on mobile since rangeslider/legend/titles are hidden
             margin: mobile
-                ? { l: 45, r: 10, t: 50, b: 55 }
+                ? { l: 45, r: 10, t: 5, b: 25 }
                 : LAYOUT_BASE.margin,
-            title: mobile
-                ? { text: '' }
-                : { text: 'Price Overview (Candlestick)', font: { family: 'Space Grotesk, sans-serif', size: 15, color: '#e6edf3' } },
+            // Remove redundant interior chart title (card header is sufficient)
+            title: { text: '' },
             // Hide legend on mobile (single OHLC trace; card header provides context)
             legend: mobile ? { visible: false } : LAYOUT_BASE.legend,
             xaxis: {
