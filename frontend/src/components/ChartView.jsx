@@ -3,6 +3,7 @@ import Plotly from 'plotly.js-dist-min';
 
 // Responsive chart height: smaller on mobile, full on desktop
 const chartH = () => window.innerWidth <= 480 ? 260 : window.innerWidth <= 768 ? 330 : window.innerWidth <= 1024 ? 390 : 460;
+const isMobile = () => window.innerWidth <= 768;
 
 const LAYOUT_BASE = {
     paper_bgcolor: 'transparent',
@@ -275,12 +276,20 @@ export function OverviewChart({ data, defaultZoomDays = 252 }) {
             };
         }
 
+        const mobile = isMobile();
+
         Plotly.react(ref.current, traces, {
             ...LAYOUT_BASE,
-            title: {
-                text: 'Price Overview (Candlestick)',
-                font: { family: 'Space Grotesk, sans-serif', size: 15, color: '#e6edf3' },
-            },
+            // On mobile: remove title (card header already says "Price Action") and
+            // give the rangeselector 50px of top breathing room so it doesn't overlap data
+            margin: mobile
+                ? { l: 45, r: 10, t: 50, b: 55 }
+                : LAYOUT_BASE.margin,
+            title: mobile
+                ? { text: '' }
+                : { text: 'Price Overview (Candlestick)', font: { family: 'Space Grotesk, sans-serif', size: 15, color: '#e6edf3' } },
+            // Hide legend on mobile (single OHLC trace; card header provides context)
+            legend: mobile ? { visible: false } : LAYOUT_BASE.legend,
             xaxis: {
                 ...LAYOUT_BASE.xaxis,
                 rangeselector: {
@@ -296,14 +305,12 @@ export function OverviewChart({ data, defaultZoomDays = 252 }) {
                     activecolor: 'rgba(56,139,253,.35)',
                     bordercolor: 'rgba(56,139,253,.2)',
                     borderwidth: 1,
-                    font: { color: '#8b949e', size: 11 },
+                    font: { color: '#8b949e', size: mobile ? 10 : 11 },
                 },
-                rangeslider: {
-                    visible: true,
-                    bgcolor: 'rgba(15,31,56,.6)',
-                    bordercolor: 'rgba(56,139,253,.15)',
-                    thickness: 0.07,
-                },
+                // Rangeslider hidden on mobile — redundant with pinch-zoom & rangeselector
+                rangeslider: mobile
+                    ? { visible: false }
+                    : { visible: true, bgcolor: 'rgba(15,31,56,.6)', bordercolor: 'rgba(56,139,253,.15)', thickness: 0.07 },
                 // Default view viewport sizing
                 range: [
                     data[Math.max(0, data.length - defaultZoomDays)].Date,
@@ -312,7 +319,11 @@ export function OverviewChart({ data, defaultZoomDays = 252 }) {
                 type: 'date',
             },
             yaxis: yaxisConfig,
-        }, CONFIG);
+        }, {
+            ...CONFIG,
+            // Hide modebar on mobile — removes camera/zoom/pan icons that clash with rangeselector
+            displayModeBar: !mobile,
+        });
     }, [data]);
 
     return <div ref={ref} style={{ width: '100%', height: '100%' }} />;

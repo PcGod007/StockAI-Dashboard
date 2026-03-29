@@ -99,7 +99,7 @@ export default function DashboardView() {
                             <button className="px-3 py-1 rounded-md text-[10px] font-bold text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors">1W</button>
                         </div>
                     </div>
-                    <div className="flex-1 relative min-h-[280px] md:min-h-[460px] bg-[#0c0f19]">
+                    <div className="flex-1 relative min-h-[380px] md:min-h-[460px] bg-[#0c0f19]">
                         {hasData ? (
                             <div className="absolute inset-2">
                                 <OverviewChart data={stockData} />
