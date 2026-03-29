@@ -137,9 +137,7 @@ export default function DashboardView() {
                                     <span key="sep" className="w-px h-4 bg-white/[0.12] mx-1 shrink-0" />
                                 );
                                 const isIntraday = INTRADAY_TABS.has(tab);
-                                const isDisabled = isIntraday
-                                    ? (!ticker?.trim() || intradayLoading)
-                                    : !hasData;
+                                const isDisabled = !hasData || (isIntraday && intradayLoading);
                                 return (
                                     <button
                                         key={tab}
