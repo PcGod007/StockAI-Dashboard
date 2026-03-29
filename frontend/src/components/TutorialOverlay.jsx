@@ -137,6 +137,7 @@ export default function TutorialOverlay({ step, steps = TUTORIALS.EQUITY, onClos
 
     const BLOB_H_EST = 230; // approx card height for clamping
     const isMobile = W < 768;
+    const BLOB_W = 320;
     const centerL = Math.max(8, Math.min((W - BLOB_W) / 2, W - BLOB_W - 8));
 
     const getBlobStyle = () => {
