@@ -290,12 +290,7 @@ export function OverviewChart({ data, defaultZoomDays = 252, isIntraday = false 
             legend: mobile ? { visible: false } : LAYOUT_BASE.legend,
             xaxis: {
                 ...LAYOUT_BASE.xaxis,
-                // Hide weekends. Only hide after-hours [16:00, 09:30] for intraday charts,
-                // because daily historical dates lack times and default to 00:00 (which falls inside the hidden gap!)
-                rangebreaks: [
-                    { pattern: 'day of week', bounds: ['sat', 'mon'] },
-                    ...(isIntraday ? [{ pattern: 'hour', bounds: [16, 9.5] }] : [])
-                ],
+
 
                 // Rangeslider hidden on mobile — redundant with pinch-zoom & rangeselector
                 rangeslider: mobile
