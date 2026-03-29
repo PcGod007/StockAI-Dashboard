@@ -239,7 +239,7 @@ export function PredictionChart({ data }) {
 }
 
 /* ──────────────── Overview Candlestick Chart ────────────── */
-export function OverviewChart({ data, defaultZoomDays = 252 }) {
+export function OverviewChart({ data, defaultZoomDays = 252, isIntraday = false }) {
     const ref = useRef(null);
     useMobileTouchDismiss(ref);
 
@@ -290,10 +290,11 @@ export function OverviewChart({ data, defaultZoomDays = 252 }) {
             legend: mobile ? { visible: false } : LAYOUT_BASE.legend,
             xaxis: {
                 ...LAYOUT_BASE.xaxis,
-                // Hide weekends and after-hours to prevent large blank gaps in intraday charts
+                // Hide weekends. Only hide after-hours [16:00, 09:30] for intraday charts,
+                // because daily historical dates lack times and default to 00:00 (which falls inside the hidden gap!)
                 rangebreaks: [
-                    { pattern: 'day of week', bounds: ['sat', 'mon'] }, // Hide Saturday to Monday morning
-                    { pattern: 'hour', bounds: [16, 9.5] }              // Hide 4:00 PM to 9:30 AM
+                    { pattern: 'day of week', bounds: ['sat', 'mon'] },
+                    ...(isIntraday ? [{ pattern: 'hour', bounds: [16, 9.5] }] : [])
                 ],
 
                 // Rangeslider hidden on mobile — redundant with pinch-zoom & rangeselector

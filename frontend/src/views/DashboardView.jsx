@@ -117,8 +117,8 @@ export default function DashboardView() {
             <div className="grid grid-cols-12 gap-4 md:gap-6">
                 {/* Main Candlestick Chart (Hero Widget) */}
                 <div className="col-span-12 xl:col-span-8 bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden flex flex-col md:min-h-[500px] shadow-2xl shadow-black/20">
-                    <div className="p-4 flex items-center justify-between bg-white/[0.02] border-b border-white/[0.06]">
-                        <div className="flex items-center gap-3">
+                    <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/[0.02] border-b border-white/[0.06]">
+                        <div className="flex items-center gap-3 shrink-0">
                             <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
                                 <span className="material-symbols-outlined text-[16px] text-blue-400">candlestick_chart</span>
                             </div>
@@ -131,7 +131,7 @@ export default function DashboardView() {
                             </div>
                         </div>
                         {/* Unified time-range toolbar */}
-                        <div className="flex items-center gap-0.5 p-1 bg-white/[0.04] rounded-lg border border-white/[0.04] overflow-x-auto">
+                        <div className="flex items-center gap-0.5 p-1 bg-white/[0.04] rounded-lg border border-white/[0.04] w-full sm:w-auto overflow-x-auto">
                             {['1H', '1D', '1W', 'SEP', '1M', '3M', '6M', '1Y', '3Y', 'ALL'].map((tab) => {
                                 if (tab === 'SEP') return (
                                     <span key="sep" className="w-px h-4 bg-white/[0.12] mx-1 shrink-0" />
@@ -162,7 +162,7 @@ export default function DashboardView() {
                     <div className="flex-1 relative min-h-[380px] md:min-h-[460px] bg-[#0c0f19]">
                         {chartHasData ? (
                             <div className="absolute inset-2">
-                                <OverviewChart data={chartData} defaultZoomDays={chartZoom} />
+                                <OverviewChart data={chartData} defaultZoomDays={chartZoom} isIntraday={!!intradayData} />
                             </div>
                         ) : (
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
