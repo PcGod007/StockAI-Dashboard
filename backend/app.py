@@ -10,6 +10,8 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import Ridge
 import os
 import requests
+import threading
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -541,6 +543,24 @@ def model_debug():
 def health_check():
     """Simple ping endpoint for the frontend to verify backend stability."""
     return jsonify({'status': 'ok', 'message': 'API is operational'})
+
+# ──────────────────────── Render Keep-Alive CRON ────────────────────────────
+def keep_alive():
+    """
+    Background daemon thread that pings the Render app's public URL every 14 minutes.
+    This prevents the free-tier Render web service from sleeping due to inactivity.
+    """
+    url = "https://stock-predictor-api-6opv.onrender.com/api/health"
+    while True:
+        try:
+            time.sleep(14 * 60) # Ping every 14 minutes (Render sleeps after 15 mins)
+            requests.get(url, timeout=10)
+            print("🟢 Keep-alive ping successful")
+        except Exception as e:
+            print(f"🔴 Keep-alive ping failed: {e}")
+
+# Start the daemon thread in the background (runs automatically in Gunicorn)
+threading.Thread(target=keep_alive, daemon=True).start()
 
 if __name__ == '__main__':
     print("🚀 Stock Predictor API running at http://127.0.0.1:5000")
