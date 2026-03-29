@@ -292,21 +292,7 @@ export function OverviewChart({ data, defaultZoomDays = 252 }) {
             legend: mobile ? { visible: false } : LAYOUT_BASE.legend,
             xaxis: {
                 ...LAYOUT_BASE.xaxis,
-                rangeselector: {
-                    buttons: [
-                        { count: 1, label: '1M', step: 'month', stepmode: 'backward' },
-                        { count: 3, label: '3M', step: 'month', stepmode: 'backward' },
-                        { count: 6, label: '6M', step: 'month', stepmode: 'backward' },
-                        { count: 1, label: '1Y', step: 'year', stepmode: 'backward' },
-                        { count: 3, label: '3Y', step: 'year', stepmode: 'backward' },
-                        { step: 'all', label: 'ALL' },
-                    ],
-                    bgcolor: 'rgba(15,31,56,.8)',
-                    activecolor: 'rgba(56,139,253,.35)',
-                    bordercolor: 'rgba(56,139,253,.2)',
-                    borderwidth: 1,
-                    font: { color: '#8b949e', size: mobile ? 10 : 11 },
-                },
+
                 // Rangeslider hidden on mobile — redundant with pinch-zoom & rangeselector
                 rangeslider: mobile
                     ? { visible: false }

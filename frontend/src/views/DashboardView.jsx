@@ -9,28 +9,40 @@ export default function DashboardView() {
         stockData, hasData, stats, newsData, hasPred, predData, hasNews 
     } = useAppContext();
 
-    // Intraday tab state
-    const [zoomTab, setZoomTab] = useState('1D');
-    const [intradayData, setIntradayData] = useState(null);
+    // Tab state – 1H/1D/1W = intraday fetch; 1M/3M/6M/1Y/3Y/ALL = daily zoom
+    const INTRADAY_TABS = new Set(['1H', '1D', '1W']);
+    const DAILY_ZOOM    = { '1M': 22, '3M': 66, '6M': 126, '1Y': 252, '3Y': 756, 'ALL': 9999 };
+
+    const [activeTab,     setActiveTab]     = useState('1Y');
+    const [intradayData,  setIntradayData]  = useState(null);
     const [intradayLoading, setIntradayLoading] = useState(false);
+    const [dailyZoom,     setDailyZoom]     = useState(252); // 1Y default
 
     const handleTabChange = async (tab) => {
-        setZoomTab(tab);
-        if (!ticker?.trim()) return;
-        setIntradayLoading(true);
-        try {
-            const result = await fetchIntraday(ticker.trim().toUpperCase(), tab);
-            setIntradayData(result.data);
-        } catch (e) {
-            console.warn('Intraday fetch failed:', e);
+        setActiveTab(tab);
+        if (INTRADAY_TABS.has(tab)) {
+            // Intraday: fetch live candle data from backend
+            if (!ticker?.trim()) return;
+            setIntradayLoading(true);
+            try {
+                const result = await fetchIntraday(ticker.trim().toUpperCase(), tab);
+                setIntradayData(result.data);
+            } catch (e) {
+                console.warn('Intraday fetch failed:', e);
+                setIntradayData(null);
+            } finally {
+                setIntradayLoading(false);
+            }
+        } else {
+            // Daily zoom: clear intraday, update zoom window on existing stockData
             setIntradayData(null);
-        } finally {
-            setIntradayLoading(false);
+            setDailyZoom(DAILY_ZOOM[tab]);
         }
     };
 
-    // Chart data: intraday when a tab's data is loaded, else daily historical
-    const chartData = intradayData || stockData;
+    // Chart data and zoom derived from active tab
+    const chartData    = intradayData || stockData;
+    const chartZoom    = intradayData ? 9999 : dailyZoom;
     const chartHasData = !!(intradayData?.length > 0 || hasData);
 
     return (
@@ -118,29 +130,39 @@ export default function DashboardView() {
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-1.5 p-1 bg-white/[0.04] rounded-lg border border-white/[0.04]">
-                            {['1H', '1D', '1W'].map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => handleTabChange(tab)}
-                                    disabled={!ticker?.trim() || intradayLoading}
-                                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-colors ${
-                                        zoomTab === tab
-                                            ? 'bg-blue-500/20 text-white border border-blue-500/30'
-                                            : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
-                                    } disabled:opacity-40 disabled:cursor-not-allowed`}
-                                >
-                                    {intradayLoading && zoomTab === tab
-                                        ? <span className="material-symbols-outlined text-[10px] animate-spin">autorenew</span>
-                                        : tab}
-                                </button>
-                            ))}
+                        {/* Unified time-range toolbar */}
+                        <div className="flex items-center gap-0.5 p-1 bg-white/[0.04] rounded-lg border border-white/[0.04] overflow-x-auto">
+                            {['1H', '1D', '1W', 'SEP', '1M', '3M', '6M', '1Y', '3Y', 'ALL'].map((tab) => {
+                                if (tab === 'SEP') return (
+                                    <span key="sep" className="w-px h-4 bg-white/[0.12] mx-1 shrink-0" />
+                                );
+                                const isIntraday = INTRADAY_TABS.has(tab);
+                                const isDisabled = isIntraday
+                                    ? (!ticker?.trim() || intradayLoading)
+                                    : !hasData;
+                                return (
+                                    <button
+                                        key={tab}
+                                        onClick={() => handleTabChange(tab)}
+                                        disabled={isDisabled}
+                                        className={`shrink-0 px-2 py-1 rounded-md text-[10px] font-bold transition-colors whitespace-nowrap ${
+                                            activeTab === tab
+                                                ? 'bg-blue-500/20 text-white border border-blue-500/30'
+                                                : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                                        } disabled:opacity-30 disabled:cursor-not-allowed`}
+                                    >
+                                        {intradayLoading && activeTab === tab
+                                            ? <span className="material-symbols-outlined text-[10px] animate-spin">autorenew</span>
+                                            : tab}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                     <div className="flex-1 relative min-h-[380px] md:min-h-[460px] bg-[#0c0f19]">
                         {chartHasData ? (
                             <div className="absolute inset-2">
-                                <OverviewChart data={chartData} defaultZoomDays={9999} />
+                                <OverviewChart data={chartData} defaultZoomDays={chartZoom} />
                             </div>
                         ) : (
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
