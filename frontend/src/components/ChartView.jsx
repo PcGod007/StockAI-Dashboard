@@ -246,13 +246,21 @@ export function OverviewChart({ data, defaultZoomDays = 252, isIntraday = false 
     useEffect(() => {
         if (!ref.current || !data || data.length === 0) return;
 
+        // Strip timezone suffix from all dates. This completely prevents Plotly from shifting New York trading hours 
+        // into the user's local timezone (e.g. +05:30), which is exactly what was causing Plotly's rangebreaks 
+        // to illegally delete the trading candles on international devices!
+        const cleanData = data.map(d => ({
+            ...d,
+            Date: typeof d.Date === 'string' ? d.Date.replace(/(Z|[+-]\d{2}:\d{2})$/, '') : d.Date
+        }));
+
         const traces = [
             {
-                x: data.map(r => r.Date),
-                close: data.map(r => r.Close),
-                open: data.map(r => r.Open),
-                high: data.map(r => r.High),
-                low: data.map(r => r.Low),
+                x: cleanData.map(r => r.Date),
+                close: cleanData.map(r => r.Close),
+                open: cleanData.map(r => r.Open),
+                high: cleanData.map(r => r.High),
+                low: cleanData.map(r => r.Low),
                 type: 'candlestick',
                 name: 'OHLC',
                 increasing: { line: { color: '#3fb950' }, fillcolor: 'rgba(63,185,80,.6)' },
@@ -260,7 +268,7 @@ export function OverviewChart({ data, defaultZoomDays = 252, isIntraday = false 
             },
         ];
 
-        const visibleData = data.slice(Math.max(0, data.length - defaultZoomDays));
+        const visibleData = cleanData.slice(Math.max(0, cleanData.length - defaultZoomDays));
         const allLows = visibleData.map(r => r.Low).filter(v => v != null);
         const allHighs = visibleData.map(r => r.High).filter(v => v != null);
 
@@ -290,7 +298,11 @@ export function OverviewChart({ data, defaultZoomDays = 252, isIntraday = false 
             legend: mobile ? { visible: false } : LAYOUT_BASE.legend,
             xaxis: {
                 ...LAYOUT_BASE.xaxis,
-
+                // Automatically collapse weekends, and collapse after-hours for intraday charts.
+                rangebreaks: [
+                    { pattern: 'day of week', bounds: ['sat', 'mon'] },
+                    ...(isIntraday ? [{ pattern: 'hour', bounds: [16, 9.5] }] : [])
+                ],
 
                 // Rangeslider hidden on mobile — redundant with pinch-zoom & rangeselector
                 rangeslider: mobile
@@ -298,8 +310,8 @@ export function OverviewChart({ data, defaultZoomDays = 252, isIntraday = false 
                     : { visible: true, bgcolor: 'rgba(15,31,56,.6)', bordercolor: 'rgba(56,139,253,.15)', thickness: 0.07 },
                 // Default view viewport sizing
                 range: [
-                    data[Math.max(0, data.length - defaultZoomDays)].Date,
-                    data[data.length - 1].Date
+                    cleanData[Math.max(0, cleanData.length - defaultZoomDays)].Date,
+                    cleanData[cleanData.length - 1].Date
                 ],
                 type: 'date',
             },
