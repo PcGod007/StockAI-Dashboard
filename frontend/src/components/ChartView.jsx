@@ -324,7 +324,7 @@ export function OverviewChart({ data, defaultZoomDays = 252 }) {
             // Hide modebar on mobile — removes camera/zoom/pan icons that clash with rangeselector
             displayModeBar: !mobile,
         });
-    }, [data]);
+    }, [data, defaultZoomDays]);
 
     return <div ref={ref} style={{ width: '100%', height: '100%' }} />;
 }

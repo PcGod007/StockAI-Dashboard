@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../AppContext';
 import { OverviewChart } from '../components/ChartView';
 
@@ -7,6 +7,10 @@ export default function DashboardView() {
         ticker, setTicker, start, setStart, end, setEnd, handleFetch, loading, 
         stockData, hasData, stats, newsData, hasPred, predData, hasNews 
     } = useAppContext();
+
+    // 1H = last 30 days, 1D = last 252 trading days (~1 year), 1W = all data
+    const [zoomTab, setZoomTab] = useState('1D');
+    const ZOOM_MAP = { '1H': 30, '1D': 252, '1W': 9999 };
 
     return (
         <div className="space-y-8 max-w-[1600px] mx-auto w-full">
@@ -94,15 +98,23 @@ export default function DashboardView() {
                             </div>
                         </div>
                         <div className="flex items-center gap-1.5 p-1 bg-white/[0.04] rounded-lg border border-white/[0.04]">
-                            <button className="px-3 py-1 rounded-md text-[10px] font-bold text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors">1H</button>
-                            <button className="px-3 py-1 rounded-md bg-white/[0.1] text-white text-[10px] font-bold shadow-sm">1D</button>
-                            <button className="px-3 py-1 rounded-md text-[10px] font-bold text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors">1W</button>
+                            {['1H', '1D', '1W'].map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setZoomTab(tab)}
+                                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-colors ${
+                                        zoomTab === tab
+                                            ? 'bg-blue-500/20 text-white border border-blue-500/30'
+                                            : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                                    }`}
+                                >{tab}</button>
+                            ))}
                         </div>
                     </div>
                     <div className="flex-1 relative min-h-[380px] md:min-h-[460px] bg-[#0c0f19]">
                         {hasData ? (
                             <div className="absolute inset-2">
-                                <OverviewChart data={stockData} />
+                                <OverviewChart data={stockData} defaultZoomDays={ZOOM_MAP[zoomTab]} />
                             </div>
                         ) : (
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
