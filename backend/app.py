@@ -459,6 +459,68 @@ def get_news():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/intraday', methods=['GET'])
+def get_intraday():
+    """
+    Return intraday OHLCV candles for the dashboard chart tabs.
+      1H – last 60 minutes  (1-minute bars, period=1d filtered to last 1h)
+      1D – today's session  (5-minute bars, period=1d)
+      1W – this week        (1-hour bars,   period=5d)
+    """
+    ticker = request.args.get('ticker', 'GOOG')
+    tab    = request.args.get('tab', '1D')          # '1H' | '1D' | '1W'
+
+    TAB_CFG = {
+        '1H': {'interval': '1m',  'period': '1d'},
+        '1D': {'interval': '5m',  'period': '1d'},
+        '1W': {'interval': '1h',  'period': '5d'},
+    }
+    cfg = TAB_CFG.get(tab, TAB_CFG['1D'])
+
+    try:
+        data = yf.download(
+            ticker,
+            interval=cfg['interval'],
+            period=cfg['period'],
+            progress=False,
+        )
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns = data.columns.get_level_values(0)
+        if data.empty:
+            return jsonify({'error': 'No intraday data available for this ticker.'}), 404
+
+        data = data.reset_index()
+        # yfinance uses 'Datetime' for intraday, 'Date' for daily
+        dt_col = 'Datetime' if 'Datetime' in data.columns else 'Date'
+        data[dt_col] = pd.to_datetime(data[dt_col])
+
+        # For 1H: keep only the last 60 minutes of today
+        if tab == '1H':
+            cutoff = data[dt_col].max() - timedelta(hours=1)
+            data = data[data[dt_col] >= cutoff]
+
+        # Format datetime as string for JSON (Plotly handles both date and datetime)
+        data['Date'] = data[dt_col].dt.strftime('%Y-%m-%d %H:%M:%S')
+        for col in ['Open', 'High', 'Low', 'Close', 'Volume']:
+            if col in data.columns:
+                data[col] = pd.to_numeric(data[col], errors='coerce').round(4)
+
+        records = [
+            {
+                'Date':   str(r['Date']),
+                'Open':   float(r['Open'])   if not pd.isna(r['Open'])   else None,
+                'High':   float(r['High'])   if not pd.isna(r['High'])   else None,
+                'Low':    float(r['Low'])    if not pd.isna(r['Low'])    else None,
+                'Close':  float(r['Close'])  if not pd.isna(r['Close'])  else None,
+                'Volume': int(r['Volume'])   if not pd.isna(r['Volume']) else None,
+            }
+            for _, r in data.iterrows()
+        ]
+        return jsonify({'ticker': ticker, 'tab': tab, 'data': records})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/model-info', methods=['GET'])
 def model_info():
     """Debug endpoint: report model configuration."""

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../AppContext';
 import { OverviewChart } from '../components/ChartView';
+import { fetchIntraday } from '../services/api';
 
 export default function DashboardView() {
     const { 
@@ -8,9 +9,29 @@ export default function DashboardView() {
         stockData, hasData, stats, newsData, hasPred, predData, hasNews 
     } = useAppContext();
 
-    // 1H = last 30 days, 1D = last 252 trading days (~1 year), 1W = all data
+    // Intraday tab state
     const [zoomTab, setZoomTab] = useState('1D');
-    const ZOOM_MAP = { '1H': 30, '1D': 252, '1W': 9999 };
+    const [intradayData, setIntradayData] = useState(null);
+    const [intradayLoading, setIntradayLoading] = useState(false);
+
+    const handleTabChange = async (tab) => {
+        setZoomTab(tab);
+        if (!ticker?.trim()) return;
+        setIntradayLoading(true);
+        try {
+            const result = await fetchIntraday(ticker.trim().toUpperCase(), tab);
+            setIntradayData(result.data);
+        } catch (e) {
+            console.warn('Intraday fetch failed:', e);
+            setIntradayData(null);
+        } finally {
+            setIntradayLoading(false);
+        }
+    };
+
+    // Chart data: intraday when a tab's data is loaded, else daily historical
+    const chartData = intradayData || stockData;
+    const chartHasData = !!(intradayData?.length > 0 || hasData);
 
     return (
         <div className="space-y-8 max-w-[1600px] mx-auto w-full">
@@ -101,20 +122,25 @@ export default function DashboardView() {
                             {['1H', '1D', '1W'].map(tab => (
                                 <button
                                     key={tab}
-                                    onClick={() => setZoomTab(tab)}
+                                    onClick={() => handleTabChange(tab)}
+                                    disabled={!ticker?.trim() || intradayLoading}
                                     className={`px-3 py-1 rounded-md text-[10px] font-bold transition-colors ${
                                         zoomTab === tab
                                             ? 'bg-blue-500/20 text-white border border-blue-500/30'
                                             : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
-                                    }`}
-                                >{tab}</button>
+                                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                                >
+                                    {intradayLoading && zoomTab === tab
+                                        ? <span className="material-symbols-outlined text-[10px] animate-spin">autorenew</span>
+                                        : tab}
+                                </button>
                             ))}
                         </div>
                     </div>
                     <div className="flex-1 relative min-h-[380px] md:min-h-[460px] bg-[#0c0f19]">
-                        {hasData ? (
+                        {chartHasData ? (
                             <div className="absolute inset-2">
-                                <OverviewChart data={stockData} defaultZoomDays={ZOOM_MAP[zoomTab]} />
+                                <OverviewChart data={chartData} defaultZoomDays={9999} />
                             </div>
                         ) : (
                             <div className="absolute inset-0 flex flex-col items-center justify-center">

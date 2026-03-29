@@ -17,3 +17,6 @@ export const fetchPrediction = (ticker, start, end) =>
 
 export const fetchNews = (ticker) =>
   axios.get(`${BASE}/news`, { params: { ticker } }).then(r => r.data);
+
+export const fetchIntraday = (ticker, tab) =>
+  axios.get(`${BASE}/intraday`, { params: { ticker, tab } }).then(r => r.data);
